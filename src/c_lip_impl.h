@@ -18,7 +18,7 @@
 
 
 static 
-void zhalt(char *c)
+void zhalt(const char *c)
 {
    fprintf(stderr,"fatal error:\n   %s\nexit...\n",c);
    fflush(stderr);

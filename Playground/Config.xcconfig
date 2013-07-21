@@ -1,0 +1,12 @@
+//
+//  Config.xcconfig
+//  Playground
+//
+//  Created by Yogesh Swami on 7/21/13.
+//
+//
+
+NTL_STD_CXX=1
+OTHER_CFLAGS=-x c++
+HEADER_SEARCH_PATHS=$(PROJECT_DIR)/../include
+OTHER_LDFLAGS=$(TARGET_BUILD_DIR)/libNTL.a

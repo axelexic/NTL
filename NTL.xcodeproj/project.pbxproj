@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		56216154179C76B1000B37B2 /* GetTime.c in Sources */ = {isa = PBXBuildFile; fileRef = 5659868B179BB82500FCF5F2 /* GetTime.c */; };
 		56598611179BB7E500FCF5F2 /* c_lip.h in Headers */ = {isa = PBXBuildFile; fileRef = 565985B7179BB7E500FCF5F2 /* c_lip.h */; };
 		56598612179BB7E500FCF5F2 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 565985B8179BB7E500FCF5F2 /* config.h */; };
 		56598613179BB7E500FCF5F2 /* ctools.h in Headers */ = {isa = PBXBuildFile; fileRef = 565985B9179BB7E500FCF5F2 /* ctools.h */; };
@@ -1314,6 +1315,7 @@
 				56598808179BC41200FCF5F2 /* FacVec.c in Sources */,
 				56598809179BC41400FCF5F2 /* GF2.c in Sources */,
 				5659880A179BC41600FCF5F2 /* GF2E.c in Sources */,
+				56216154179C76B1000B37B2 /* GetTime.c in Sources */,
 				5659880B179BC43D00FCF5F2 /* GF2EX.c in Sources */,
 				5659880C179BC43D00FCF5F2 /* GF2EXFactoring.c in Sources */,
 				56598806179BC40D00FCF5F2 /* GF2X.c in Sources */,
@@ -1548,6 +1550,7 @@
 				565985B4179BB7CA00FCF5F2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		565987CD179BBAF100FCF5F2 /* Build configuration list for PBXNativeTarget "BerlekampTests" */ = {
 			isa = XCConfigurationList;
@@ -1556,6 +1559,7 @@
 				565987CF179BBAF100FCF5F2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		565987DA179BBB3600FCF5F2 /* Build configuration list for PBXNativeTarget "CanZassTests" */ = {
 			isa = XCConfigurationList;
@@ -1564,6 +1568,7 @@
 				565987DC179BBB3600FCF5F2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		565987E2179BBBFC00FCF5F2 /* Build configuration list for PBXNativeTarget "CharPolyTests" */ = {
 			isa = XCConfigurationList;
@@ -1572,6 +1577,7 @@
 				565987E4179BBBFC00FCF5F2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
