@@ -1,0 +1,7 @@
+//
+//  NTL.xcconfig
+//  NTL
+//
+
+NTL_STD_CXX=1
+OTHER_CFLAGS=-x c++
