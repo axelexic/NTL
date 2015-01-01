@@ -1,12 +1,11 @@
 
 
-#ifdef NTL_SINGLE_MUL
-#error "do not set NTL_SINGLE_MUL when NTL_GMP_LIP is set"
-#endif
 
 #if 1
 
 typedef void *_ntl_gbigint;
+typedef void _ntl_gbigint_body;
+
 
 #else
 
@@ -15,8 +14,10 @@ typedef void *_ntl_gbigint;
  * but better for debugging.
  */
 
-struct _ntl_gbigint_is_opaque { int _x_; };
+struct _ntl_gbigint_is_opaque { long _x_; };
 typedef struct _ntl_gbigint_is_opaque * _ntl_gbigint;
+
+typedef _ntl_gbigint_is_opaque  _ntl_gbigint_body;
 
 #endif
 
@@ -39,9 +40,6 @@ typedef struct _ntl_gbigint_is_opaque * _ntl_gbigint;
 
 
 
-#if (defined(__cplusplus) && !defined(NTL_CXX_ONLY))
-extern "C" {
-#endif
 
 
 /***********************************************************************
@@ -401,14 +399,25 @@ extern "C" {
 
 ***********************************************************************/
 
-    long _ntl_gmaxalloc(_ntl_gbigint x);
-       /* max allocation request, possibly rounded up a bit */
+    inline
+    long _ntl_gmaxalloc(_ntl_gbigint x)
+    {
+      if (!x)
+         return 0;
+      else
+         return ((((long *) (x))[0]) >> 2);
+    }
+
+    /* DIRT: the above maxalloc routine is inlined, with the definition
+       of ALLOC copied and pasted. */
+
 
     void _ntl_gsetlength(_ntl_gbigint *v, long len);
        /* Allocates enough space to hold a len-digit number,
           where each digit has NTL_NBITS bits.
           If space must be allocated, space for one extra digit
-          is always allocated. */
+          is always allocated. if (exact) then no rounding
+          occurs. */
 
     void _ntl_gfree(_ntl_gbigint *x);
        /* Free's space held by x, and sets x back to 0. */
@@ -437,37 +446,9 @@ long _ntl_gblock_destroy(_ntl_gbigint x);
 long _ntl_gblock_storage(long d);
 
 
-void _ntl_gcrt_struct_init(void **crt_struct, long n, _ntl_gbigint p,
-                          const long *primes);
-void _ntl_gcrt_struct_insert(void *crt_struct, long i, _ntl_gbigint m);
-void _ntl_gcrt_struct_free(void *crt_struct);
-void _ntl_gcrt_struct_eval(void *crt_struct, _ntl_gbigint *t, const long *a);
-long _ntl_gcrt_struct_special(void *crt_struct);
 
-void _ntl_grem_struct_init(void **rem_struct, long n, _ntl_gbigint p,
-                          const long *primes);
-void _ntl_grem_struct_free(void *rem_struct);
-void _ntl_grem_struct_eval(void *rem_struct, long *x, _ntl_gbigint a);
-
-
-
-
-#if (defined(__cplusplus) && !defined(NTL_CXX_ONLY))
-}
-#endif
-
-
-extern int _ntl_gmp_hack;
-
-#define NTL_crt_struct_eval _ntl_gcrt_struct_eval
-#define NTL_crt_struct_free _ntl_gcrt_struct_free
-#define NTL_crt_struct_init _ntl_gcrt_struct_init
-#define NTL_crt_struct_insert _ntl_gcrt_struct_insert
-#define NTL_crt_struct_special _ntl_gcrt_struct_special
-#define NTL_rem_struct_eval _ntl_grem_struct_eval
-#define NTL_rem_struct_free _ntl_grem_struct_free
-#define NTL_rem_struct_init _ntl_grem_struct_init
 #define NTL_verylong _ntl_gbigint
+#define NTL_verylong_body _ntl_gbigint_body
 #define NTL_z2log _ntl_g2log
 #define NTL_zabs _ntl_gabs
 #define NTL_zadd _ntl_gadd

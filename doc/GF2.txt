@@ -44,9 +44,17 @@ public:
    GF2(); // initial value 0
 
    GF2(const GF2& a); // copy constructor
+   explicit GF2(long a); // promotion constructor
 
    GF2& operator=(const GF2& a); // assignment
    GF2& operator=(long a); // assignment
+
+   // typedefs to aid in generic programming
+   typedef long rep_type;
+   typedef GF2Context context_type;
+   typedef GF2Bak bak_type;
+   typedef GF2Push push_type;
+   typedef GF2X poly_type;
 
 };
 
@@ -205,8 +213,9 @@ istream& operator>>(istream& s, GF2& x);
 void clear(GF2& x); // x = 0
 void set(GF2& x); // x = 1
 
+void GF2::swap(GF2& x);
 void swap(GF2& x, GF2& y);
-// swap x and y 
+// swap 
 
 static GF2 GF2::zero();
 // GF2::zero() yields a read-only reference to zero
@@ -218,5 +227,15 @@ template<> class Vec<GF2>;
 // Forward declaration of the explicit specialization
 // of Vec<GF2>.  This specialization is defined in <NTL/vec_GF2.h>,
 // which must be included in source files that need to use Vec<GF2>.
+
+GF2::GF2(INIT_NO_ALLOC_TYPE);
+// provided for consistency with other classes, initialize to zero
+
+GF2::GF2(INIT_ALLOC_TYPE);
+// provided for consistency with other classes, initialize to zero
+
+GF2::allocate();
+// provided for consistency with other classes, no action
+
 
 

@@ -4,6 +4,12 @@
 
 #include <NTL/ZZ.h>
 #include <NTL/FFT.h>
+#include <NTL/SmartPtr.h>
+#include <NTL/vector.h>
+
+#define NTL_zz_p_QUICK_CRT (NTL_DOUBLE_PRECISION - NTL_SP_NBITS > 12)
+
+
 
 NTL_OPEN_NNS
 
@@ -15,18 +21,21 @@ private:
    void operator=(const zz_pInfoT&); // disabled
 public:
    zz_pInfoT(long NewP, long maxroot);
-   zz_pInfoT(long Index);
-   ~zz_pInfoT();
-
-   long ref_count;
+   zz_pInfoT(INIT_FFT_TYPE, FFTPrimeInfo *info);
+   zz_pInfoT(INIT_USER_FFT_TYPE, long q);
 
    long p;
    double pinv;
 
-   long index;        // index >= 0 means we are directly using
-                     // an FFT prime
+   FFTPrimeInfo* p_info; // non-null means we are directly using 
+                        // an FFT prime
 
-   long PrimeCnt;     // 0 for FFT prime;  otherwise same as NumPrimes
+   UniquePtr<FFTPrimeInfo> p_info_owner;
+   // for user-defined FFT primes, we store the corresponding
+   // FFTPrimeInfo object here
+   
+
+   long PrimeCnt;    // 0 for FFT prime;  otherwise same as NumPrimes
                      // used for establishing crossover points
 
    long NumPrimes;
@@ -39,42 +48,39 @@ public:
    // q = FFTPrime[i]
 
 
-   long *CoeffModP;    // coeff mod p
+   Vec<long> CoeffModP;    // coeff mod p
 
-   double *x;          // u/q, where u = (M/q)^{-1} mod q
-   long *u;            // u, as above
+   Vec<double> x;          // u/q, where u = (M/q)^{-1} mod q
+   Vec<long> u;            // u, as above
 };
 
-extern zz_pInfoT *zz_pInfo;  // current modulus, initially null
-
+NTL_THREAD_LOCAL extern SmartPtr<zz_pInfoT> zz_pInfo;  // current modulus, initially null
 
 
 class zz_pContext {
 private:
-zz_pInfoT *ptr;
+SmartPtr<zz_pInfoT> ptr;
 
 public:
+
+zz_pContext() { }
+
+// copy constructor, assignment, destructor: default
+
+explicit zz_pContext(long p, long maxroot=NTL_FFTMaxRoot);
+zz_pContext(INIT_FFT_TYPE, long index);
+zz_pContext(INIT_USER_FFT_TYPE, long q);
+
 void save();
 void restore() const;
-
-zz_pContext() { ptr = 0; }
-zz_pContext(long p, long maxroot=NTL_FFTMaxRoot);
-zz_pContext(INIT_FFT_TYPE, long index);
-
-zz_pContext(const zz_pContext&); 
-
-zz_pContext& operator=(const zz_pContext&); 
-
-~zz_pContext();
-
 
 };
 
 
 class zz_pBak {
 private:
-long MustRestore;
-zz_pInfoT *ptr;
+zz_pContext c;
+bool MustRestore;
 
 zz_pBak(const zz_pBak&); // disabled
 void operator=(const zz_pBak&); // disabled
@@ -83,32 +89,70 @@ public:
 void save();
 void restore();
 
-zz_pBak() { MustRestore = 0; ptr = 0; }
+zz_pBak() : MustRestore(false) { }
 
 ~zz_pBak();
 
 
 };
 
+
+class zz_pPush {
+private:
+zz_pBak bak;
+
+zz_pPush(const zz_pPush&); // disabled
+void operator=(const zz_pPush&); // disabled
+
+public:
+zz_pPush() { bak.save(); }
+explicit zz_pPush(const zz_pContext& context) { bak.save(); context.restore(); }
+
+explicit zz_pPush(long p, long maxroot=NTL_FFTMaxRoot) 
+   { bak.save(); zz_pContext c(p); c.restore(); }
+
+zz_pPush(INIT_FFT_TYPE, long index) 
+   { bak.save(); zz_pContext c(INIT_FFT, index); c.restore(); }
+
+zz_pPush(INIT_USER_FFT_TYPE, long q)
+   { bak.save(); zz_pContext c(INIT_USER_FFT, q); c.restore(); }
+
+};
+
+
+
+
 #define NTL_zz_pRegister(x) zz_p x
 
 
+class zz_pX; // forward declaration
+
 class zz_p {
 public:
+typedef long rep_type;
+typedef zz_pContext context_type;
+typedef zz_pBak bak_type;
+typedef zz_pPush push_type;
+typedef zz_pX poly_type;
+
+
 
 long _zz_p__rep;
 
 
 static void init(long NewP, long maxroot=NTL_FFTMaxRoot);
 static void FFTInit(long index);
+static void UserFFTInit(long q);
 
 
 
 // ****** constructors and assignment
 
-zz_p() { _zz_p__rep = 0; }
+zz_p() : _zz_p__rep(0) {  }
 
-zz_p(const zz_p& a) :  _zz_p__rep(a._zz_p__rep) { }  
+explicit zz_p(long a) : _zz_p__rep(0) { *this = a;  }
+
+zz_p(const zz_p& a) : _zz_p__rep(a._zz_p__rep) { }  
 
 ~zz_p() { } 
 
@@ -128,6 +172,12 @@ static long PrimeCnt() { return zz_pInfo->PrimeCnt; }
 static long storage() { return sizeof(long); }
 
 zz_p(long a, INIT_LOOP_HOLE_TYPE) { _zz_p__rep = a; }
+
+// for consistency
+zz_p(INIT_NO_ALLOC_TYPE) : _zz_p__rep(0) { } 
+zz_p(INIT_ALLOC_TYPE) : _zz_p__rep(0) { } 
+void allocate() { }
+
 
 };
 

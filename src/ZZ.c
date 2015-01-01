@@ -1,10 +1,8 @@
 
-
 #include <NTL/ZZ.h>
 #include <NTL/vec_ZZ.h>
-
-
-#include <NTL/new.h>
+#include <NTL/Lazy.h>
+#include <NTL/fileio.h>
 
 
 
@@ -13,26 +11,26 @@ NTL_START_IMPL
 
 
 
+
 const ZZ& ZZ::zero()
 {
-   static ZZ z;
+   NTL_THREAD_LOCAL static ZZ z;
    return z;
 }
 
 
 const ZZ& ZZ_expo(long e)
 {
-   static ZZ expo_helper;
+   NTL_THREAD_LOCAL static ZZ expo_helper;
    conv(expo_helper, e);
    return expo_helper;
 }
 
 
 
-
 void AddMod(ZZ& x, const ZZ& a, long b, const ZZ& n)
 {
-   static ZZ B;
+   NTL_ZZRegister(B);
    conv(B, b);
    AddMod(x, a, B, n);
 }
@@ -40,14 +38,14 @@ void AddMod(ZZ& x, const ZZ& a, long b, const ZZ& n)
 
 void SubMod(ZZ& x, const ZZ& a, long b, const ZZ& n)
 {
-   static ZZ B;
+   NTL_ZZRegister(B);
    conv(B, b);
    SubMod(x, a, B, n);
 }
 
 void SubMod(ZZ& x, long a, const ZZ& b, const ZZ& n)
 {
-   static ZZ A;
+   NTL_ZZRegister(A);
    conv(A, a);
    SubMod(x, A, b, n);
 }
@@ -56,8 +54,8 @@ void SubMod(ZZ& x, long a, const ZZ& b, const ZZ& n)
 
 // ****** input and output
 
-static long iodigits = 0;
-static long ioradix = 0;
+NTL_THREAD_LOCAL static long iodigits = 0;
+NTL_THREAD_LOCAL static long ioradix = 0;
 
 // iodigits is the greatest integer such that 10^{iodigits} < NTL_WSP_BOUND
 // ioradix = 10^{iodigits}
@@ -76,8 +74,9 @@ static void InitZZIO()
       ioradix = ioradix * 10;
    }
 
-   if (iodigits <= 0) Error("problem with I/O");
+   if (iodigits <= 0) TerminalError("problem with I/O");
 }
+
 
 istream& operator>>(istream& s, ZZ& x)
 {
@@ -86,9 +85,9 @@ istream& operator>>(istream& s, ZZ& x)
    long sign;
    long ndigits;
    long acc;
-   static ZZ a;
+   NTL_ZZRegister(a);
 
-   if (!s) Error("bad ZZ input");
+   if (!s) NTL_INPUT_ERROR(s, "bad ZZ input");
 
    if (!iodigits) InitZZIO();
 
@@ -107,7 +106,7 @@ istream& operator>>(istream& s, ZZ& x)
 
    cval = CharToIntVal(c);
 
-   if (cval < 0 || cval > 9) Error("bad ZZ input");
+   if (cval < 0 || cval > 9) NTL_INPUT_ERROR(s, "bad ZZ input");
 
    ndigits = 0;
    acc = 0;
@@ -142,7 +141,6 @@ istream& operator>>(istream& s, ZZ& x)
       negate(a, a);
 
    x = a;
-
    return s;
 }
 
@@ -153,48 +151,29 @@ istream& operator>>(istream& s, ZZ& x)
 
 struct _ZZ_local_stack {
    long top;
-   long alloc;
-   long *elts;
+   Vec<long> data;
 
-   _ZZ_local_stack() { top = -1; alloc = 0; elts = 0; }
-   ~_ZZ_local_stack() { }
+   _ZZ_local_stack() { top = -1; }
 
-   long pop() { return elts[top--]; }
+   long pop() { return data[top--]; }
    long empty() { return (top == -1); }
    void push(long x);
 };
 
 void _ZZ_local_stack::push(long x)
 {
-   if (alloc == 0) {
-      alloc = 100;
-      elts = (long *) NTL_MALLOC(alloc, sizeof(long), 0);
-   }
+   if (top+1 >= data.length()) 
+      data.SetLength(max(32, long(1.414*data.length())));
 
    top++;
-
-   if (top + 1 > alloc) {
-      alloc = 2*alloc;
-      elts = (long *) NTL_REALLOC(elts, alloc, sizeof(long), 0);
-   }
-
-   if (!elts) {
-      Error("out of space in ZZ output");
-   }
-
-   elts[top] = x;
+   data[top] = x;
 }
 
 
 static
 void PrintDigits(ostream& s, long d, long justify)
 {
-   static char *buf = 0;
-
-   if (!buf) {
-      buf = (char *) NTL_MALLOC(iodigits, 1, 0);
-      if (!buf) Error("out of memory");
-   }
+   NTL_THREAD_LOCAL static Vec<char> buf(INIT_SIZE, iodigits);
 
    long i = 0;
 
@@ -223,8 +202,8 @@ void PrintDigits(ostream& s, long d, long justify)
 
 ostream& operator<<(ostream& s, const ZZ& a)
 {
-   static ZZ b;
-   static _ZZ_local_stack S;
+   ZZ b;
+   _ZZ_local_stack S;
    long r;
    long k;
 
@@ -267,12 +246,12 @@ long GCD(long a, long b)
    long u, v, t, x;
 
    if (a < 0) {
-      if (a < -NTL_MAX_LONG) Error("GCD: integer overflow");
+      if (a < -NTL_MAX_LONG) ResourceError("GCD: integer overflow");
       a = -a;
    }
 
    if (b < 0) {
-      if (b < -NTL_MAX_LONG) Error("GCD: integer overflow");
+      if (b < -NTL_MAX_LONG) ResourceError("GCD: integer overflow");
       b = -b;
    }
 
@@ -303,13 +282,13 @@ void XGCD(long& d, long& s, long& t, long a, long b)
    long aneg = 0, bneg = 0;
 
    if (a < 0) {
-      if (a < -NTL_MAX_LONG) Error("XGCD: integer overflow");
+      if (a < -NTL_MAX_LONG) ResourceError("XGCD: integer overflow");
       a = -a;
       aneg = 1;
    }
 
    if (b < 0) {
-      if (b < -NTL_MAX_LONG) Error("XGCD: integer overflow");
+      if (b < -NTL_MAX_LONG) ResourceError("XGCD: integer overflow");
       b = -b;
       bneg = 1;
    }
@@ -348,7 +327,7 @@ long InvMod(long a, long n)
    long d, s, t;
 
    XGCD(d, s, t, a, n);
-   if (d != 1) Error("InvMod: inverse undefined");
+   if (d != 1) InvModError("InvMod: inverse undefined");
    if (s < 0)
       return s + n;
    else
@@ -546,7 +525,7 @@ long ProbPrime(const ZZ& n, long NumTrials)
 void RandomPrime(ZZ& n, long l, long NumTrials)
 {
    if (l <= 1)
-      Error("RandomPrime: l out of range");
+      LogicError("RandomPrime: l out of range");
 
    if (l == 2) {
       if (RandomBnd(2))
@@ -593,7 +572,7 @@ long NextPrime(long m, long NumTrials)
       x++;
 
    if (x >= NTL_SP_BOUND)
-      Error("NextPrime: no more primes");
+      ResourceError("NextPrime: no more primes");
 
    return x;
 }
@@ -617,7 +596,7 @@ long NextPowerOfTwo(long m)
    }
 
    if (k >= NTL_BITS_PER_LONG-1)
-      Error("NextPowerOfTwo: overflow");
+      ResourceError("NextPowerOfTwo: overflow");
 
    return k;
 }
@@ -660,7 +639,8 @@ long bit(long a, long k)
 
 long divide(ZZ& q, const ZZ& a, const ZZ& b)
 {
-   static ZZ qq, r;
+   NTL_ZZRegister(qq);
+   NTL_ZZRegister(r);
 
    if (IsZero(b)) {
       if (IsZero(a)) {
@@ -685,7 +665,7 @@ long divide(ZZ& q, const ZZ& a, const ZZ& b)
 
 long divide(const ZZ& a, const ZZ& b)
 {
-   static ZZ r;
+   NTL_ZZRegister(r);
 
    if (IsZero(b)) return IsZero(a);
    if (IsOne(b)) return 1;
@@ -696,7 +676,7 @@ long divide(const ZZ& a, const ZZ& b)
 
 long divide(ZZ& q, const ZZ& a, long b)
 {
-   static ZZ qq;
+   NTL_ZZRegister(qq);
 
    if (!b) {
       if (IsZero(a)) {
@@ -728,13 +708,57 @@ long divide(const ZZ& a, long b)
    long r = rem(a,  b);
    return (r == 0);
 }
-   
 
+
+void InvMod(ZZ& x, const ZZ& a, const ZZ& n)
+{
+   // NOTE: the underlying LIP routines write to the first argument,
+   // even if inverse is undefined
+
+   NTL_ZZRegister(xx);
+   if (InvModStatus(xx, a, n)) 
+      InvModError("InvMod: inverse undefined", a, n);
+   x = xx;
+}
+
+void PowerMod(ZZ& x, const ZZ& a, const ZZ& e, const ZZ& n)
+{
+   // NOTE: this ensures that all modular inverses are computed
+   // in the routine InvMod above, rather than the LIP-internal
+   // modular inverse routine
+   if (e < 0) {
+      ZZ a_inv;
+      ZZ e_neg;
+
+      InvMod(a_inv, a, n);
+      negate(e_neg, e);
+      LowLevelPowerMod(x, a_inv, e_neg, n);
+   }
+   else
+      LowLevelPowerMod(x, a, e, n); 
+}
+   
+#ifdef NTL_EXCEPTIONS
+
+void InvModError(const char *s, const ZZ& a, const ZZ& n)
+{
+   throw InvModErrorObject(s, a, n); 
+}
+
+#else
+
+void InvModError(const char *s, const ZZ& a, const ZZ& n)
+{
+   TerminalError(s);
+}
+
+
+#endif
 
 long RandomPrime_long(long l, long NumTrials)
 {
    if (l <= 1 || l >= NTL_BITS_PER_LONG)
-      Error("RandomPrime: length out of range");
+      ResourceError("RandomPrime: length out of range");
 
    long n;
    do {
@@ -745,20 +769,18 @@ long RandomPrime_long(long l, long NumTrials)
 }
 
 
+static Lazy< Vec<char> > lowsieve_storage;
+// This is a GLOBAL VARIABLE
+
+
 PrimeSeq::PrimeSeq()
 {
    movesieve = 0;
-   movesieve_mem = 0;
    pshift = -1;
    pindex = -1;
    exhausted = 0;
 }
 
-PrimeSeq::~PrimeSeq()
-{
-   if (movesieve_mem)
-      free(movesieve_mem);
-}
 
 long PrimeSeq::next()
 {
@@ -772,7 +794,7 @@ long PrimeSeq::next()
    }
 
    for (;;) {
-      char *p = movesieve;
+      const char *p = movesieve;
       long i = pindex;
 
       while ((++i) < NTL_PRIME_BND) {
@@ -794,8 +816,6 @@ long PrimeSeq::next()
    }
 }
 
-static char *lowsieve = 0;
-
 void PrimeSeq::shift(long newshift)
 {
    long i;
@@ -805,32 +825,26 @@ void PrimeSeq::shift(long newshift)
    long ibound;
    char *p;
 
-   if (!lowsieve)
+   if (!lowsieve_storage.built())
       start();
 
-   pindex = -1;
-   exhausted = 0;
+   const char *lowsieve = lowsieve_storage->elts();
+
 
    if (newshift < 0) {
       pshift = -1;
-      return;
    }
-
-   if (newshift == pshift) return;
-
-   pshift = newshift;
-
-   if (pshift == 0) {
+   else if (newshift == 0) {
+      pshift = 0;
       movesieve = lowsieve;
    } 
-   else {
-      if (!movesieve_mem) {
-         movesieve_mem = (char *) NTL_MALLOC(NTL_PRIME_BND, 1, 0);
-         if (!movesieve_mem) 
-            Error("out of memory in PrimeSeq");
+   else if (newshift != pshift) {
+      if (movesieve_mem.length() == 0) {
+         movesieve_mem.SetLength(NTL_PRIME_BND);
       }
 
-      p = movesieve = movesieve_mem;
+      pshift = newshift;
+      movesieve = p = movesieve_mem.elts();
       for (i = 0; i < NTL_PRIME_BND; i++)
          p[i] = 1;
 
@@ -849,6 +863,9 @@ void PrimeSeq::shift(long newshift)
          jstep += 2;
       }
    }
+
+   pindex = -1;
+   exhausted = 0;
 }
 
 
@@ -861,22 +878,32 @@ void PrimeSeq::start()
    long ibnd;
    char *p;
 
-   p = lowsieve = (char *) NTL_MALLOC(NTL_PRIME_BND, 1, 0);
-   if (!p)
-      Error("out of memory in PrimeSeq");
+   do {
+      Lazy< Vec<char> >::Builder builder(lowsieve_storage);
+      if (!builder()) break;
 
-   for (i = 0; i < NTL_PRIME_BND; i++)
-      p[i] = 1;
-      
-   jstep = 1;
-   jstart = -1;
-   ibnd = (SqrRoot(2 * NTL_PRIME_BND + 1) - 3) / 2;
-   for (i = 0; i <= ibnd; i++) {
-      jstart += 2 * ((jstep += 2) - 1);
-      if (p[i])
-         for (j = jstart; j < NTL_PRIME_BND; j += jstep)
-            p[j] = 0;
-   }
+      UniquePtr< Vec<char> > ptr;
+      ptr.make();
+      ptr->SetLength(NTL_PRIME_BND);
+
+      p = ptr->elts();
+
+      for (i = 0; i < NTL_PRIME_BND; i++)
+         p[i] = 1;
+         
+      jstep = 1;
+      jstart = -1;
+      ibnd = (SqrRoot(2 * NTL_PRIME_BND + 1) - 3) / 2;
+      for (i = 0; i <= ibnd; i++) {
+         jstart += 2 * ((jstep += 2) - 1);
+         if (p[i])
+            for (j = jstart; j < NTL_PRIME_BND; j += jstep)
+               p[j] = 0;
+      }
+
+      builder.move(ptr);
+   } while (0);
+
 }
 
 void PrimeSeq::reset(long b)
@@ -1104,7 +1131,7 @@ long CRT(ZZ& gg, ZZ& a, long G, long p)
 
    long modified = 0;
 
-   static ZZ g;
+   NTL_ZZRegister(g);
 
    if (!CRTInRange(gg, a)) {
       modified = 1;
@@ -1198,14 +1225,14 @@ long CRT(ZZ& gg, ZZ& a, const ZZ& G, const ZZ& p)
 
 void sub(ZZ& x, const ZZ& a, long b)
 {
-   static ZZ B;
+   NTL_ZZRegister(B);
    conv(B, b);
    sub(x, a, B);
 }
 
 void sub(ZZ& x, long a, const ZZ& b)
 {
-   static ZZ A;
+   NTL_ZZRegister(A);
    conv(A, a);
    sub(x, A, b);
 }
@@ -1213,7 +1240,7 @@ void sub(ZZ& x, long a, const ZZ& b)
 
 void power2(ZZ& x, long e)
 {
-   if (e < 0) Error("power2: negative exponent");
+   if (e < 0) ArithmeticError("power2: negative exponent");
    set(x);
    LeftShift(x, x, e);
 }
@@ -1228,9 +1255,9 @@ void conv(ZZ& x, const char *s)
    long acc;
    long i = 0;
 
-   static ZZ a;
+   NTL_ZZRegister(a);
 
-   if (!s) Error("bad ZZ input");
+   if (!s) InputError("bad ZZ input");
 
    if (!iodigits) InitZZIO();
 
@@ -1251,7 +1278,7 @@ void conv(ZZ& x, const char *s)
       sign = 1;
 
    cval = CharToIntVal(c);
-   if (cval < 0 || cval > 9) Error("bad ZZ input");
+   if (cval < 0 || cval > 9) InputError("bad ZZ input");
 
    ndigits = 0;
    acc = 0;
@@ -1292,21 +1319,21 @@ void conv(ZZ& x, const char *s)
 
 void bit_and(ZZ& x, const ZZ& a, long b)
 {
-   static ZZ B;
+   NTL_ZZRegister(B);
    conv(B, b);
    bit_and(x, a, B);
 }
 
 void bit_or(ZZ& x, const ZZ& a, long b)
 {
-   static ZZ B;
+   NTL_ZZRegister(B);
    conv(B, b);
    bit_or(x, a, B);
 }
 
 void bit_xor(ZZ& x, const ZZ& a, long b)
 {
-   static ZZ B;
+   NTL_ZZRegister(B);
    conv(B, b);
    bit_xor(x, a, B);
 }
@@ -1314,7 +1341,7 @@ void bit_xor(ZZ& x, const ZZ& a, long b)
 
 long power_long(long a, long e)
 {
-   if (e < 0) Error("power_long: negative exponent");
+   if (e < 0) ArithmeticError("power_long: negative exponent");
 
    if (e == 0) return 1;
 
@@ -1338,6 +1365,8 @@ long power_long(long a, long e)
 
    return to_long(res);
 }
+
+
 
 //  RANDOM NUMBER GENERATION
 
@@ -1553,7 +1582,7 @@ void MD5_compress(unsigned long *buf, unsigned long *in)
 
 
 static
-void words_from_bytes(unsigned long *txtl, unsigned char *txtc, long n)
+void words_from_bytes(unsigned long *txtl, const unsigned char *txtc, long n)
 {
    long i;
    unsigned long v;
@@ -1568,7 +1597,7 @@ void words_from_bytes(unsigned long *txtl, unsigned char *txtc, long n)
 }
 
 static 
-void bytes_from_words(unsigned char *txtc, unsigned long *txtl, long n)
+void bytes_from_words(unsigned char *txtc, const unsigned long *txtl, long n)
 {
    long i;
    unsigned long v;
@@ -1686,10 +1715,10 @@ void arc4(unsigned char *buffer_ptr, long buffer_len, _ZZ_arc4_key *key)
 
 // global state information for PRNG
 
-static long ran_initialized = 0;
-static _ZZ_arc4_key ran_key;
+NTL_THREAD_LOCAL static long ran_initialized = 0;
+NTL_THREAD_LOCAL static _ZZ_arc4_key ran_key;
 
-static unsigned long default_md5_tab[16] = {
+static const unsigned long default_md5_tab[16] = {
 744663023UL, 1011602954UL, 3163087192UL, 3383838527UL, 
 3305324122UL, 3197458079UL, 2266495600UL, 2760303563UL, 
 346234297UL, 1919920720UL, 1896169861UL, 2192176675UL, 
@@ -1705,9 +1734,9 @@ void build_arc4_tab(unsigned char *seed_bytes, const ZZ& s)
    
    unsigned char *txt;
 
-   typedef unsigned char u_char;
-   txt = NTL_NEW_OP u_char[nb + 68];
-   if (!txt) Error("out of memory");
+   Vec<unsigned char> txt_storage;
+   txt_storage.SetLength(nb + 68);
+   txt = txt_storage.elts();
 
    BytesFromZZ(txt + 4, s, nb);
 
@@ -1724,8 +1753,6 @@ void build_arc4_tab(unsigned char *seed_bytes, const ZZ& s)
 
       bytes_from_words(seed_bytes + 16*i, buf, 4);
    }
-
-   delete [] txt;
 }
 
 
@@ -1747,10 +1774,16 @@ void SetSeed(const ZZ& s)
    ran_initialized = 1;
 }
 
+
 static 
 void ran_bytes(unsigned char *bytes, long n)
 {
-   if (!ran_initialized) SetSeed(ZZ::zero());
+   if (!ran_initialized) {
+      ZZ x;
+      const string& id = UniqueID();
+      ZZFromBytes(x, (const unsigned char *) id.c_str(), id.length());
+      SetSeed(x);
+   }
    arc4(bytes, n, &ran_key);
 }
 
@@ -1776,7 +1809,7 @@ long RandomBits_long(long l)
 {
    if (l <= 0) return 0;
    if (l >= NTL_BITS_PER_LONG) 
-      Error("RandomBits: length too big");
+      ResourceError("RandomBits: length too big");
 
    unsigned char buf[NTL_BITS_PER_LONG/8];
    unsigned long res;
@@ -1798,7 +1831,7 @@ unsigned long RandomBits_ulong(long l)
 {
    if (l <= 0) return 0;
    if (l > NTL_BITS_PER_LONG) 
-      Error("RandomBits: length too big");
+      ResourceError("RandomBits: length too big");
 
    unsigned char buf[NTL_BITS_PER_LONG/8];
    unsigned long res;
@@ -1824,7 +1857,7 @@ long RandomLen_long(long l)
    if (l <= 0) return 0;
    if (l == 1) return 1;
    if (l >= NTL_BITS_PER_LONG) 
-      Error("RandomLen: length too big");
+      ResourceError("RandomLen: length too big");
 
    return RandomBits_long(l-1) + (1L << (l-1)); 
 }
@@ -1838,30 +1871,26 @@ void RandomBits(ZZ& x, long l)
    }
 
    if (NTL_OVERFLOW(l, 1, 0))
-      Error("RandomBits: length too big");
+      ResourceError("RandomBits: length too big");
 
    long nb = (l+7)/8;
 
-   static unsigned char *buf = 0;
-   static long buf_len = 0;
+   NTL_THREAD_LOCAL static Vec<unsigned char> buf_mem;
+   Vec<unsigned char>::Watcher watch_buf_mem(buf_mem);
 
-   if (nb > buf_len) {
-      if (buf) delete [] buf;
-      buf_len = ((nb + 1023)/1024)*1024; // allocate in 1024-byte lots
-      typedef unsigned char u_char;
-      buf = NTL_NEW_OP u_char[buf_len];
-      if (!buf) Error("out of memory");
-   }
+   buf_mem.SetLength(nb);
+   unsigned char *buf = buf_mem.elts();
 
    ran_bytes(buf, nb);
 
-   static ZZ res;
+   NTL_ZZRegister(res);
 
    ZZFromBytes(res, buf, nb);
    trunc(res, res, l);
 
    x = res;
 }
+
 
 void RandomLen(ZZ& x, long l)
 {
@@ -1876,7 +1905,7 @@ void RandomLen(ZZ& x, long l)
    }
 
    if (NTL_OVERFLOW(l, 1, 0))
-      Error("RandomLen: length too big");
+      ResourceError("RandomLen: length too big");
 
    // pre-allocate space to avoid two allocations
    long nw = (l + NTL_ZZ_NBITS - 1)/NTL_ZZ_NBITS;
@@ -1906,8 +1935,10 @@ void RandomBnd(ZZ& x, const ZZ& bnd)
 
    long l = k + RandomBndExcess;
 
-   static ZZ t, r, t1;
-
+   NTL_ZZRegister(t);
+   NTL_ZZRegister(r);
+   NTL_ZZRegister(t1);
+   
    do {
       RandomBits(t, l);
       rem(r, t, bnd);
@@ -1930,7 +1961,8 @@ long RandomBnd(long bnd)
    long l = k + RandomBndExcess;
 
    if (l > NTL_BITS_PER_LONG-2) {
-      static ZZ Bnd, res;
+      NTL_ZZRegister(Bnd);
+      NTL_ZZRegister(res);
 
       Bnd = bnd;
       RandomBnd(res, Bnd);
@@ -1955,7 +1987,7 @@ long RandomBnd(long bnd)
 static
 double Log2(double x)
 {
-   static double log2 = log(2.0);
+   NTL_THREAD_LOCAL static double log2 = log(2.0);
    return log(x)/log2;
 }
 
@@ -1989,7 +2021,7 @@ long ErrBoundTest(long kk, long tt, long nn)
    if (n < 1) return 1;
 
    // the following test is largely academic
-   if (9*t > NTL_FDOUBLE_PRECISION) Error("ErrBoundTest: t too big");
+   if (9*t > NTL_FDOUBLE_PRECISION) LogicError("ErrBoundTest: t too big");
 
    double log2_k = Log2(k);
 
@@ -2022,9 +2054,9 @@ long ErrBoundTest(long kk, long tt, long nn)
 
 void GenPrime(ZZ& n, long k, long err)
 {
-   if (k <= 1) Error("GenPrime: bad length");
+   if (k <= 1) LogicError("GenPrime: bad length");
 
-   if (k > (1L << 20)) Error("GenPrime: length too large");
+   if (k > (1L << 20)) ResourceError("GenPrime: length too large");
 
    if (err < 1) err = 1;
    if (err > 512) err = 512;
@@ -2051,9 +2083,9 @@ void GenPrime(ZZ& n, long k, long err)
 
 long GenPrime_long(long k, long err)
 {
-   if (k <= 1) Error("GenPrime: bad length");
+   if (k <= 1) LogicError("GenPrime: bad length");
 
-   if (k >= NTL_BITS_PER_LONG) Error("GenPrime: length too large");
+   if (k >= NTL_BITS_PER_LONG) ResourceError("GenPrime: length too large");
 
    if (err < 1) err = 1;
    if (err > 512) err = 512;
@@ -2077,9 +2109,9 @@ long GenPrime_long(long k, long err)
 
 void GenGermainPrime(ZZ& n, long k, long err)
 {
-   if (k <= 1) Error("GenGermainPrime: bad length");
+   if (k <= 1) LogicError("GenGermainPrime: bad length");
 
-   if (k > (1L << 20)) Error("GenGermainPrime: length too large");
+   if (k > (1L << 20)) ResourceError("GenGermainPrime: length too large");
 
    if (err < 1) err = 1;
    if (err > 512) err = 512;
@@ -2191,7 +2223,7 @@ void GenGermainPrime(ZZ& n, long k, long err)
 long GenGermainPrime_long(long k, long err)
 {
    if (k >= NTL_BITS_PER_LONG-1)
-      Error("GenGermainPrime_long: length too long");
+      ResourceError("GenGermainPrime_long: length too long");
 
    ZZ n;
    GenGermainPrime(n, k, err);

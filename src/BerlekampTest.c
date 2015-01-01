@@ -56,7 +56,7 @@ int main()
 
    mul(ff, factors);
    if (f != ff)
-      Error("Incorrect factorization!!");
+      TerminalError("Incorrect factorization!!");
 
    sort(factors);
 

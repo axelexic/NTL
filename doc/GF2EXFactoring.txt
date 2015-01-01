@@ -85,7 +85,7 @@ vec_pair_GF2EX_long NewDDF(const GF2EX& f, const GF2EX& h,
 
 // which can be set by the user.  If the sizes of the tables
 // exceeds GF2EXFileThresh KB, external files are used.
-// Initial value is 256.
+// Initial value is NTL_FILE_THRESH (defined in tools.h).
 
 
 

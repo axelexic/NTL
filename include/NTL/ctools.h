@@ -76,6 +76,14 @@
 /********************************************************/
 
 
+// The usual token pasting stuff...
+
+#define NTL_PASTE_TOKENS2(a,b) a ## b
+#define NTL_PASTE_TOKENS(a,b) NTL_PASTE_TOKENS2(a,b)
+
+#define NTL_STRINGIFY(x) NTL_STRINGIFY_AUX(x)
+#define NTL_STRINGIFY_AUX(x) #x
+
 
 
 
@@ -141,10 +149,25 @@
 
 
 
+#ifdef NTL_TEST_EXCEPTIONS
+
+extern unsigned long exception_counter;
+
+#define NTL_BASIC_MALLOC(n, a, b) \
+   (NTL_OVERFLOW1(n, a, b) ? ((void *) 0) : \
+    ((void *) malloc(((long)(n))*((long)(a)) + ((long)(b)))))
+
+#define NTL_MALLOC(n, a, b) \
+   (--exception_counter == 0 ? (void *) 0 : NTL_BASIC_MALLOC(n, a, b))
+
+#else
 
 #define NTL_MALLOC(n, a, b) \
    (NTL_OVERFLOW1(n, a, b) ? ((void *) 0) : \
     ((void *) malloc(((long)(n))*((long)(a)) + ((long)(b)))))
+
+
+#endif
 
 /*
  * NTL_MALLOC(n, a, b) returns 0 if a*n + b >= NTL_OVFBND1, and otherwise
@@ -154,13 +177,24 @@
  */
 
 
+#ifdef NTL_TEST_EXCEPTIONS
+
+#define NTL_BASIC_SNS_MALLOC(n, a, b) \
+   (NTL_OVERFLOW1(n, a, b) ? ((void *) 0) : \
+    ((void *) NTL_SNS malloc(((long)(n))*((long)(a)) + ((long)(b)))))
 
 
+#define NTL_SNS_MALLOC(n, a, b) \
+   (--exception_counter == 0 ? (void *) 0 : NTL_BASIC_SNS_MALLOC(n, a, b))
 
+
+#else
 
 #define NTL_SNS_MALLOC(n, a, b) \
    (NTL_OVERFLOW1(n, a, b) ? ((void *) 0) : \
     ((void *) NTL_SNS malloc(((long)(n))*((long)(a)) + ((long)(b)))))
+
+#endif
 
 /*
  * NTL_SNS_MALLOC is the same as NTL_MALLOC, except that the call
@@ -242,9 +276,24 @@
  */
 
 
-#if (defined(__cplusplus) && !defined(NTL_CXX_ONLY))
-extern "C" {
+#ifdef NTL_THREADS
+
+#define NTL_THREAD_LOCAL thread_local 
+
+#else
+
+#define NTL_THREAD_LOCAL 
+
 #endif
+
+
+#define NTL_RELEASE_THRESH (128)
+
+/*
+ * threshold for releasing scratch memory.
+ */
+
+
 
 long _ntl_IsFinite(double *p);
 /* This forces a double into memory, and tests if it is "normal";
@@ -259,20 +308,50 @@ void _ntl_ForceToMem(double *p);
 
 double _ntl_ldexp(double x, long e);
 
-void _ntl_abort(void);
+void _ntl_abort();
 /* This is the routine called by NTL to abort a program in case of error. */
 
-void _ntl_abort_cxx_callback(void);
+void _ntl_abort_cxx_callback();
 /* This is a C++ function (implemented in tools.c) that is
    used to implement the callback mechanism.  The issue here
    is that I don't want a C function to call a C++ function
-   via a function pointer.  This could potentially be problematic. */
+   via a function pointer.  This could potentially be problematic. 
+   EDIT: since changing over to all-C++, this is now moot.
+*/
+
+
+#define NTL_DEFINE_SWAP(T)\
+inline void _ntl_swap(T& a, T& b)\
+{\
+   T t = a; a = b; b = t;\
+}
+
+NTL_DEFINE_SWAP(long)
+NTL_DEFINE_SWAP(int)
+NTL_DEFINE_SWAP(short)
+NTL_DEFINE_SWAP(char)
+
+NTL_DEFINE_SWAP(unsigned long)
+NTL_DEFINE_SWAP(unsigned int)
+NTL_DEFINE_SWAP(unsigned short)
+NTL_DEFINE_SWAP(unsigned char)
+
+NTL_DEFINE_SWAP(double)
+NTL_DEFINE_SWAP(float)
 
    
-   
-#if (defined(__cplusplus) && !defined(NTL_CXX_ONLY))
+template<class T>
+void _ntl_swap(T*& a, T*& b)
+{
+   T* t = a; a = b; b = t;
 }
-#endif
+
+/* These are convenience routines.  I don't want it to overload
+   the std library's swap function, nor do I want to rely on the latter,
+   as the C++ standard is kind of broken on the issue of where
+   swap is defined. And I also only want it defined for built-in types.
+ */
+   
 
 #endif
 

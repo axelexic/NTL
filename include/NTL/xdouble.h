@@ -33,14 +33,17 @@ double x;
 long e;
 
 xdouble() : x(0), e(0) { }
+explicit xdouble(double a) : x(0), e(0) { *this = a; }
 
 inline xdouble& operator=(double a);
+
 
 ~xdouble() { }
 
 void normalize();
 
-static long oprec;
+NTL_THREAD_LOCAL static long oprec;
+
 static void SetOutputPrecision(long p);
 static long OutputPrecision() { return oprec; }
 

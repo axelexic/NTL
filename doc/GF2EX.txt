@@ -21,6 +21,9 @@ public:
    GF2EX(); // initial value 0
 
    GF2EX(const GF2EX& a); // copy
+   explicit GF2EX(const GF2E& a);  // promotion
+   explicit GF2EX(GF2 a); 
+   explicit GF2EX(long a); 
 
    GF2EX& operator=(const GF2EX& a); // assignment
    GF2EX& operator=(const GF2E& a);
@@ -29,13 +32,21 @@ public:
 
    ~GF2EX(); // destructor
 
-   GF2EX(long i, const GF2E& c); // initilaize to X^i*c
-   GF2EX(long i, GF2 c); 
-   GF2EX(long i, long c); 
+   GF2EX(INIT_MONO_TYPE, long i, const GF2E& c); 
+   GF2EX(INIT_MONO_TYPE, long i, GF2 c); 
+   GF2EX(INIT_MONO_TYPE, long i, long c); 
+   // initialize to c*X^i, invoke as GF2EX(INIT_MONO, i)
 
+   GF2EX(INIT_MONO_TYPE, long i); 
+   // initialize to X^i, invoke as GF2EX(INIT_MONO, i)
+
+
+
+
+   // typedefs to aid in generic programming
 
    typedef GF2E coeff_type;
-
+   typedef GF2EXModulus modulus_type;
    // ...
 
 };
@@ -867,6 +878,12 @@ GF2EX::GF2EX(INIT_SIZE_TYPE, long n);
 static const GF2EX& zero();
 // GF2EX::zero() is a read-only reference to 0
 
+void GF2EX::swap(GF2EX& x);
 void swap(GF2EX& x, GF2EX& y); 
-// swap x and y (via "pointer swapping")
+// swap (via "pointer swapping")
+
+GF2EX::GF2EX(long i, const GF2E& c); 
+GF2EX::GF2EX(long i, GF2 c); 
+GF2EX::GF2EX(long i, long c); 
+// initialize to X^i*c, provided for backward compatibility
 

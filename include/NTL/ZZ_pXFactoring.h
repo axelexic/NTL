@@ -68,7 +68,7 @@ berlekamp(const ZZ_pX& f, long verbose=0)
 // Uses "Berlekamp" appraoch.
 
 
-extern long ZZ_pX_BlockingFactor;
+NTL_THREAD_LOCAL extern long ZZ_pX_BlockingFactor;
 // Controls GCD blocking for DDF.
 
 void DDF(vec_pair_ZZ_pX_long& factors, const ZZ_pX& f, const ZZ_pX& h,
@@ -82,13 +82,11 @@ inline vec_pair_ZZ_pX_long DDF(const ZZ_pX& f, const ZZ_pX& h,
 // Assumes f is monic and square-free,  and h  = X^p mod f
 // Obsolete: see NewDDF, below.
 
-extern long ZZ_pX_GCDTableSize; /* = 4 */
+NTL_THREAD_LOCAL extern long ZZ_pX_GCDTableSize; /* = 4 */
 // Controls GCD blocking for NewDDF
 
-extern char ZZ_pX_stem[]; 
-// Determines filename stem for external storage in NewDDF.
 
-extern double ZZ_pXFileThresh; /* = 128 */
+NTL_THREAD_LOCAL extern double ZZ_pXFileThresh; 
 // external files are used for baby/giant steps if size
 // of these tables exceeds ZZ_pXFileThresh KB.
 

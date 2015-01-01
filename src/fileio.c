@@ -1,9 +1,14 @@
 
 #include <NTL/fileio.h>
+#include <NTL/thread.h>
 
-#include <string.h>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <cstring>
 
-#include <NTL/new.h>
+
 
 NTL_START_IMPL
 
@@ -13,8 +18,22 @@ void OpenWrite(ofstream& s, const char *name)
    s.open(name, ios::out);
 
    if (!s) {
-      cerr << "open write error: " << name;
-      Error("");
+      FileError("write open failed");
+   }
+}
+
+void OpenWrite(ofstream& s, const char *name, FileList& flist)
+{
+   // post condition: file is successfully opened iff 
+   //   name is added to flist (even if exception is thrown).
+   //   We do the AddFile first, since that can conceivably fail.
+
+   flist.AddFile(name);
+   s.open(name, ios::out);
+
+   if (!s) {
+      flist.RemoveLast();
+      FileError("write open failed");
    }
 }
 
@@ -23,41 +42,92 @@ void OpenRead(ifstream& s, const char *name)
 {
    s.open(name, ios::in);
    if (!s) {
-      cerr << "open read error: " << name;
-      Error("");
+      FileError("read open failed");
    }
 }
 
-static char sbuf[256];
-
-char *FileName(const char* stem, const char *ext)
+void CloseWrite(ofstream& s)
 {
-   strcpy(sbuf, stem);
-   strcat(sbuf, "-");
-   strcat(sbuf, ext);
-
-   return sbuf;
+   s.close();
+   if (s.fail()) FileError("close failed");
 }
 
-char *FileName(const char* stem, const char *ext, long d)
-{
-   strcpy(sbuf, stem);
-   strcat(sbuf, "-");
-   strcat(sbuf, ext);
-   strcat(sbuf, "-");
 
-   char dbuf[6];
-   dbuf[5] = '\0';
-   long i, dd;
-   dd = d;
-   for (i = 4; i >= 0; i--) {
-      dbuf[i] = IntValToChar(dd % 10);
-      dd = dd / 10;
+void FileList::AddFile(const char *name)
+{
+   Vec<char> item;
+   item.SetLength(strlen(name)+1);
+   strcpy(item.elts(), name);
+
+   data.append(item);
+}
+
+void FileList::RemoveLast()
+{
+   data.SetLength(data.length()-1);
+}
+
+
+FileList::~FileList()
+{
+   long i, n;
+ 
+   n = data.length();
+   for (i = 0; i < n; i++)
+      remove(data[i].elts());
+}
+
+
+
+
+const char *FileName(const char* stem, long d)
+{
+   NTL_THREAD_LOCAL static string sbuf;
+
+   stringstream ss;
+   ss << "tmp-ntl-" << stem;
+   ss << "-" << setfill('0') << setw(5) << d << "-";
+   sbuf = ss.str() + UniqueID();
+   return sbuf.c_str();
+}
+
+// UniqueID:
+//
+// builds a string of the form cnt-time-clock-pid-tid, where
+//   - cnt is a global counter
+//   - time is the value returned by time(0)
+//   - clock is the value returned by clock()
+//   - pid is the value returned by getpid() (or "0" if getpid()
+//        is not available)
+//   - tid is the value returned by this_thread::get_id()
+//        (or "0" if not using threads)
+// each thread should have its own unique ID, which is guaranteed
+//    to be unique across all threads in a process, and which
+//    is hopefully unique across the entire system (but this
+//    harder to guarantee)
+
+
+const string& UniqueID()
+{
+   static AtomicCounter cnt; // a GLOBAL counter
+   
+
+   NTL_THREAD_LOCAL static string ID;
+   NTL_THREAD_LOCAL static bool initialized = false;
+   NTL_THREAD_LOCAL static unsigned long local_cnt = cnt.inc();
+   NTL_THREAD_LOCAL static unsigned long local_time = time(0);
+   NTL_THREAD_LOCAL static unsigned long local_clock = clock();
+
+   if (!initialized) {
+      stringstream ss;
+      ss << local_cnt << "-" << local_time << "-" 
+         << local_clock << "-" << GetPID()  << "-" << CurrentThreadID();  
+      ID = ss.str();
+      initialized = true;
    }
 
-   strcat(sbuf, dbuf);
-
-   return sbuf;
+   return ID;
 }
+
 
 NTL_END_IMPL

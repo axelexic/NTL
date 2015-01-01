@@ -58,6 +58,9 @@ public:
    ~Vec(); // destructor
 
    void SetLength(long n); // set length to n bits
+   void SetLength(long n, GF2 a); 
+      // set length to n, if length increases, initialize new bits to a
+
    void SetMaxLength(long n); // allocate space for n bits
 
    long length() const; // current length, in bits
@@ -97,6 +100,16 @@ public:
    const GF2 operator()(long i) const;
 
 
+   void swap(Vec<GF2>& y);
+   // swap with y (fast: just swaps pointers)
+
+   void append(GF2 a);
+   // append a to end of vector
+
+   void append(const Vec<GF2>& w);
+   // append w to end of vector
+
+
 // Some partial STL compatibility...also used
 // to interface with the Matrix template class
 
@@ -113,7 +126,7 @@ public:
 void swap(Vec<GF2>& x, Vec<GF2>& y);
 // swap x and y (fast pointer swap)
 
-void append(Vec<GF2>& v, const GF2& a);
+void append(Vec<GF2>& v, GF2 a);
 // append a to v
 
 void append(Vec<GF2>& v, const Vec<GF2>& a);

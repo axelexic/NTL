@@ -4,7 +4,6 @@
 A Tour of NTL: Examples: Floating Point Classes </title>
 </head>
 
-<body bgcolor="#fff9e6">
 <center>
 <a href="tour-ex5.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
  <a href="tour-examples.html"><img src="arrow2.gif" alt="[Up]" align=bottom></a> 
@@ -32,31 +31,53 @@ The advantage of the latter two classes is efficiency.
 
 Here again is a program that reads a list of numbers from the input,
 and outputs the sum of their squares, using the class <tt>RR</tt>.
-<p>
 
-<pre>
-#include &lt;NTL/RR.h&gt;
+<!-- STARTPLAIN
+#include <NTL/RR.h>
 
 int main()
 {
    RR acc, val;
 
    acc = 0;
-   while (SkipWhiteSpace(cin)) {
-      cin &gt;&gt; val;
+   while (cin >> val) 
       acc += val*val;
-   }
 
-   cout &lt;&lt; acc &lt;&lt; "\n";
+   cout << acc << "\n";
 }
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000"><font face="monospace">
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/RR.h&gt;</font><br>
+<br>
+<font color="#008b00"><b>int</b></font>&nbsp;main()<br>
+{<br>
+&nbsp;&nbsp; RR acc, val;<br>
+<br>
+&nbsp;&nbsp; acc = <font color="#ff8b00">0</font>;<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>while</b></font>&nbsp;(cin &gt;&gt; val) <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acc += val*val;<br>
+<br>
+&nbsp;&nbsp; cout &lt;&lt; acc &lt;&lt; <font color="#4a6f8b">&quot;</font><font color="#8a2ae2">\n</font><font color="#4a6f8b">&quot;</font>;<br>
+}<br>
+</font></font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 
 <p>
 
 The precision used for the computation can be set by executing 
-<pre>
+<!-- STARTPLAIN
    RR::SetPrecision(p);
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000">
+<font face="monospace">
+&nbsp;&nbsp; RR::SetPrecision(p);<br>
+</font>
+</font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 which sets the effective precision to <tt>p</tt> bits.
 By default, <tt>p=150</tt>.
 All of the basic arithmetic operations compute their results
@@ -69,14 +90,22 @@ point standard (except that there are no special values, like
 
 The number of <i>decimal</i> digits of precision that are used when
 printing an <tt>RR</tt> can be set be executing
-<pre>
+<!-- STARTPLAIN
    RR::SetOutputPrecision(d);
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000">
+<font face="monospace">
+&nbsp;&nbsp; RR::SetOutputPrecision(d);<br>
+</font>
+</font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 which sets the output precision to <tt>d</tt>.
 By default, <tt>d=10</tt>.
 
 <p>
-See <a href="RR.txt"><tt>RR.txt</tt></a> for details.
+See <a href="RR.cpp.html"><tt>RR.txt</tt></a> for details.
 
 <p>
 
@@ -85,8 +114,8 @@ or <tt>xdouble</tt>, one gets an equivalent program using one of the
 other floating point classes.
 The output precision for these two classes can be controlled just
 as with <tt>RR</tt>.
-See <a href="quad_float.txt"><tt>quad_float.txt</tt></a> and 
-<a href="xdouble.txt"><tt>xdouble.txt</tt></a>
+See <a href="quad_float.cpp.html"><tt>quad_float.txt</tt></a> and 
+<a href="xdouble.cpp.html"><tt>xdouble.txt</tt></a>
 for details.
 
 <p>

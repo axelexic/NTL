@@ -26,18 +26,30 @@ public:
    ZZ_pX(); // initialize to 0
 
    ZZ_pX(const ZZ_pX& a); // copy constructor
+   explicit ZZ_pX(const ZZ_p& a); // promotion 
+   explicit ZZ_pX(long a); // promotion 
 
    ZZ_pX& operator=(const ZZ_pX& a); // assignment
    ZZ_pX& operator=(const ZZ_p& a); // assignment
    ZZ_pX& operator=(const long a); // assignment
 
-   ZZ_pX(long i, const ZZ_p& c);  // initialize to X^i*c
-   ZZ_pX(long i, long c);
-
    ~ZZ_pX(); // destructor
 
+   ZZ_pX(INIT_MONO_TYPE, long i, const ZZ_p& c);  
+   ZZ_pX(INIT_MONO_TYPE, long i, long c);
+   // initialize to c*X^i, invoke as ZZ_pX(INIT_MONO, i, c)
 
-   typedef ZZ_p coeff_type;
+   ZZ_pX(INIT_MONO_TYPE, long i, long c);
+   // initialize to X^i, invoke as ZZ_pX(INIT_MONO, i)
+
+
+   // typedefs to aid in generic programming
+   typedef zz_p coeff_type;
+   typedef zz_pE residue_type;
+   typedef zz_pXModulus modulus_type;
+   typedef zz_pXMultiplier multiplier_type;
+   typedef fftRep fft_type;
+
 
    // ...
 
@@ -875,3 +887,10 @@ static const ZZ_pX& ZZ_pX::zero();
 void swap(ZZ_pX& x, ZZ_pX& y); 
 // swap x and y (via "pointer swapping")
 
+void ZZ_pX::swap(ZZ_pX& x);
+// swap member function
+
+
+ZZ_pX::ZZ_pX(long i, const ZZ_p& c);  
+ZZ_pX::ZZ_pX(long i, long c);
+// initialize to c*X^i, provided for backward compatibility

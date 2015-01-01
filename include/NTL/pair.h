@@ -40,8 +40,10 @@ template<class S, class T>
 NTL_SNS istream& operator>>(NTL_SNS istream& s, Pair<S,T>& x)  
 {  
    long c;  
+   S a;
+   T b;
   
-   if (!s) Error("bad pair input");  
+   if (!s) NTL_INPUT_ERROR(s, "bad pair input");  
   
    c = s.peek();  
    while (IsWhiteSpace(c)) {  
@@ -50,14 +52,14 @@ NTL_SNS istream& operator>>(NTL_SNS istream& s, Pair<S,T>& x)
    }  
   
    if (c != '[')  
-      Error("bad pair input");  
+      NTL_INPUT_ERROR(s, "bad pair input");  
   
    s.get();  
   
-   if (!(s >> x.a))   
-      Error("bad pair input");  
-   if (!(s >> x.b))  
-      Error("bad pair input");  
+   if (!(s >> a))   
+      NTL_INPUT_ERROR(s, "bad pair input");  
+   if (!(s >> b))  
+      NTL_INPUT_ERROR(s, "bad pair input");  
   
    c = s.peek();  
    while (IsWhiteSpace(c)) {  
@@ -66,10 +68,12 @@ NTL_SNS istream& operator>>(NTL_SNS istream& s, Pair<S,T>& x)
    }  
   
    if (c != ']')  
-      Error("bad pair input");  
+      NTL_INPUT_ERROR(s, "bad pair input");  
   
    s.get();  
-  
+
+   x.a = a;
+   x.b = b;
    return s;  
 }  
   

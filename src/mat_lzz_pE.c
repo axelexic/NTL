@@ -12,7 +12,7 @@ void add(mat_zz_pE& X, const mat_zz_pE& A, const mat_zz_pE& B)
    long m = A.NumCols();  
   
    if (B.NumRows() != n || B.NumCols() != m)   
-      Error("matrix add: dimension mismatch");  
+      LogicError("matrix add: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -28,7 +28,7 @@ void sub(mat_zz_pE& X, const mat_zz_pE& A, const mat_zz_pE& B)
    long m = A.NumCols();  
   
    if (B.NumRows() != n || B.NumCols() != m)  
-      Error("matrix sub: dimension mismatch");  
+      LogicError("matrix sub: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -59,7 +59,7 @@ void mul_aux(mat_zz_pE& X, const mat_zz_pE& A, const mat_zz_pE& B)
    long m = B.NumCols();  
   
    if (l != B.NumRows())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -98,7 +98,7 @@ void mul_aux(vec_zz_pE& x, const mat_zz_pE& A, const vec_zz_pE& b)
    long l = A.NumCols();  
   
    if (l != b.length())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    x.SetLength(n);  
   
@@ -134,7 +134,7 @@ void mul_aux(vec_zz_pE& x, const vec_zz_pE& a, const mat_zz_pE& B)
    long l = B.NumCols();  
   
    if (n != a.length())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    x.SetLength(l);  
   
@@ -192,14 +192,17 @@ void determinant(zz_pE& d, const mat_zz_pE& M_in)
    n = M_in.NumRows();
 
    if (M_in.NumCols() != n)
-      Error("determinant: nonsquare matrix");
+      LogicError("determinant: nonsquare matrix");
 
    if (n == 0) {
       set(d);
       return;
    }
 
-   vec_zz_pX *M = NTL_NEW_OP vec_zz_pX[n];
+
+   UniqueArray<vec_zz_pX> M_store;
+   M_store.SetLength(n);
+   vec_zz_pX *M = M_store.get();
 
    for (i = 0; i < n; i++) {
       M[i].SetLength(n);
@@ -256,14 +259,11 @@ void determinant(zz_pE& d, const mat_zz_pE& M_in)
       }
       else {
          clear(d);
-         goto done;
+         return;
       }
    }
 
    conv(d, det);
-
-done:
-   delete[] M;
 }
 
 long IsIdent(const mat_zz_pE& A, long n)
@@ -323,10 +323,10 @@ void solve(zz_pE& d, vec_zz_pE& X,
 {
    long n = A.NumRows();
    if (A.NumCols() != n)
-      Error("solve: nonsquare matrix");
+      LogicError("solve: nonsquare matrix");
 
    if (b.length() != n)
-      Error("solve: dimension mismatch");
+      LogicError("solve: dimension mismatch");
 
    if (n == 0) {
       set(d);
@@ -340,7 +340,10 @@ void solve(zz_pE& d, vec_zz_pE& X,
 
    const zz_pXModulus& p = zz_pE::modulus();
 
-   vec_zz_pX *M = NTL_NEW_OP vec_zz_pX[n];
+
+   UniqueArray<vec_zz_pX> M_store;
+   M_store.SetLength(n);
+   vec_zz_pX *M = M_store.get();
 
    for (i = 0; i < n; i++) {
       M[i].SetLength(n+1);
@@ -400,7 +403,7 @@ void solve(zz_pE& d, vec_zz_pE& X,
       }
       else {
          clear(d);
-         goto done;
+         return;
       }
    }
 
@@ -416,16 +419,13 @@ void solve(zz_pE& d, vec_zz_pE& X,
    }
 
    conv(d, det);
-
-done:
-   delete[] M;
 }
 
 void inv(zz_pE& d, mat_zz_pE& X, const mat_zz_pE& A)
 {
    long n = A.NumRows();
    if (A.NumCols() != n)
-      Error("inv: nonsquare matrix");
+      LogicError("inv: nonsquare matrix");
 
    if (n == 0) {
       set(d);
@@ -440,7 +440,9 @@ void inv(zz_pE& d, mat_zz_pE& X, const mat_zz_pE& A)
    const zz_pXModulus& p = zz_pE::modulus();
 
 
-   vec_zz_pX *M = NTL_NEW_OP vec_zz_pX[n];
+   UniqueArray<vec_zz_pX> M_store;
+   M_store.SetLength(n);
+   vec_zz_pX *M = M_store.get();
 
    for (i = 0; i < n; i++) {
       M[i].SetLength(2*n);
@@ -501,7 +503,7 @@ void inv(zz_pE& d, mat_zz_pE& X, const mat_zz_pE& A)
       }
       else {
          clear(d);
-         goto done;
+         return;
       }
    }
 
@@ -519,9 +521,6 @@ void inv(zz_pE& d, mat_zz_pE& X, const mat_zz_pE& A)
    }
 
    conv(d, det);
-
-done:
-   delete[] M;
 }
 
 
@@ -538,12 +537,14 @@ long gauss(mat_zz_pE& M_in, long w)
    long m = M_in.NumCols();
 
    if (w < 0 || w > m)
-      Error("gauss: bad args");
+      LogicError("gauss: bad args");
 
    const zz_pXModulus& p = zz_pE::modulus();
 
 
-   vec_zz_pX *M = NTL_NEW_OP vec_zz_pX[n];
+   UniqueArray<vec_zz_pX> M_store;
+   M_store.SetLength(n);
+   vec_zz_pX *M = M_store.get();
 
    for (i = 0; i < n; i++) {
       M[i].SetLength(m);
@@ -601,8 +602,6 @@ long gauss(mat_zz_pE& M_in, long w)
    for (i = 0; i < n; i++)
       for (j = 0; j < m; j++)
          conv(M_in[i][j], M[i][j]);
-
-   delete [] M;
 
    return l;
 }
@@ -832,12 +831,12 @@ void inv(mat_zz_pE& X, const mat_zz_pE& A)
 {
    zz_pE d;
    inv(d, X, A);
-   if (d == 0) Error("inv: non-invertible matrix");
+   if (d == 0) ArithmeticError("inv: non-invertible matrix");
 }
 
 void power(mat_zz_pE& X, const mat_zz_pE& A, const ZZ& e)
 {
-   if (A.NumRows() != A.NumCols()) Error("power: non-square matrix");
+   if (A.NumRows() != A.NumCols()) LogicError("power: non-square matrix");
 
    if (e == 0) {
       ident(X, A.NumRows());

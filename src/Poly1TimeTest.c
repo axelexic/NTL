@@ -71,8 +71,6 @@ printf("\n");
 
 int main()
 {
-   _ntl_gmp_hack = 0;
-
 
 #ifdef NTL_SPMM_ULL
 
@@ -137,6 +135,8 @@ int main()
    long iter;
 
    const int nprimes = 10;
+   const long L = 13;
+   const long N = 1L << L;
    long r;
    
 
@@ -145,14 +145,14 @@ int main()
    vec_long aa[nprimes], AA[nprimes];
 
    for (r = 0; r < nprimes; r++) {
-      aa[r].SetLength(4096);
-      AA[r].SetLength(4096);
+      aa[r].SetLength(N);
+      AA[r].SetLength(N);
 
-      for (i = 0; i < 4096; i++)
-         aa[r][i] = RandomBnd(FFTPrime[r]);
+      for (i = 0; i < N; i++)
+         aa[r][i] = RandomBnd(GetFFTPrime(r));
 
 
-      FFTFwd(AA[r].elts(), aa[r].elts(), 12, r);
+      FFTFwd(AA[r].elts(), aa[r].elts(), L, r);
    }
 
    iter = 1;
@@ -160,7 +160,7 @@ int main()
    do {
      t = GetTime();
      for (i = 0; i < iter; i++) {
-        for (r = 0; r < nprimes; r++) FFTFwd(AA[r].elts(), aa[r].elts(), 12, r);
+        for (r = 0; r < nprimes; r++) FFTFwd(AA[r].elts(), aa[r].elts(), L, r);
      }
      t = GetTime() - t;
      iter = 2*iter;
@@ -168,7 +168,7 @@ int main()
 
    iter = iter/2;
 
-   iter = long((2/t)*iter) + 1;
+   iter = long((1.5/t)*iter) + 1;
 
 
    double tvec[5];
@@ -177,7 +177,7 @@ int main()
    for (w = 0; w < 5; w++) {
      t = GetTime();
      for (i = 0; i < iter; i++) {
-        for (r = 0; r < nprimes; r++) FFTFwd(AA[r].elts(), aa[r].elts(), 12, r);
+        for (r = 0; r < nprimes; r++) FFTFwd(AA[r].elts(), aa[r].elts(), L, r);
      }
      t = GetTime() - t;
      tvec[w] = t;

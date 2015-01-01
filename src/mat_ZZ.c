@@ -12,7 +12,7 @@ void add(mat_ZZ& X, const mat_ZZ& A, const mat_ZZ& B)
    long m = A.NumCols();  
   
    if (B.NumRows() != n || B.NumCols() != m)   
-      Error("matrix add: dimension mismatch");  
+      LogicError("matrix add: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -28,7 +28,7 @@ void sub(mat_ZZ& X, const mat_ZZ& A, const mat_ZZ& B)
    long m = A.NumCols();  
   
    if (B.NumRows() != n || B.NumCols() != m)  
-      Error("matrix sub: dimension mismatch");  
+      LogicError("matrix sub: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -45,7 +45,7 @@ void mul_aux(mat_ZZ& X, const mat_ZZ& A, const mat_ZZ& B)
    long m = B.NumCols();  
   
    if (l != B.NumRows())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -84,7 +84,7 @@ void mul_aux(vec_ZZ& x, const mat_ZZ& A, const vec_ZZ& b)
    long l = A.NumCols();  
   
    if (l != b.length())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    x.SetLength(n);  
   
@@ -120,7 +120,7 @@ void mul_aux(vec_ZZ& x, const vec_ZZ& a, const mat_ZZ& B)
    long l = B.NumCols();  
   
    if (n != a.length())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    x.SetLength(l);  
   
@@ -192,7 +192,7 @@ void determinant(ZZ& rres, const mat_ZZ& a, long deterministic)
 {
    long n = a.NumRows();
    if (a.NumCols() != n)
-      Error("determinant: nonsquare matrix");
+      LogicError("determinant: nonsquare matrix");
 
    if (n == 0) {
       set(rres);
@@ -344,7 +344,7 @@ long CRT(mat_ZZ& gg, ZZ& a, const mat_zz_p& G)
    long m = gg.NumCols();
 
    if (G.NumRows() != n || G.NumCols() != m)
-      Error("CRT: dimension mismatch");
+      LogicError("CRT: dimension mismatch");
 
    long p = zz_p::modulus();
 
@@ -443,7 +443,7 @@ void ExactDiv(vec_ZZ& x, const ZZ& d)
 
    for (i = 0; i < n; i++)
       if (!divide(x[i], x[i], d))
-         Error("inexact division");
+         ArithmeticError("inexact division");
 }
 
 static
@@ -457,7 +457,7 @@ void ExactDiv(mat_ZZ& x, const ZZ& d)
    for (i = 0; i < n; i++)
       for (j = 0; j < m; j++)
          if (!divide(x[i][j], x[i][j], d))
-            Error("inexact division");
+            ArithmeticError("inexact division");
 }
 
 void diag(mat_ZZ& X, long n, const ZZ& d_in)  
@@ -503,10 +503,10 @@ void solve(ZZ& d_out, vec_ZZ& x_out,
    long n = A.NumRows();
    
    if (A.NumCols() != n)
-      Error("solve: nonsquare matrix");
+      LogicError("solve: nonsquare matrix");
 
    if (b.length() != n)
-      Error("solve: dimension mismatch");
+      LogicError("solve: dimension mismatch");
 
    if (n == 0) {
       set(d_out);
@@ -623,7 +623,7 @@ void inv(ZZ& d_out, mat_ZZ& x_out, const mat_ZZ& A, long deterministic)
    long n = A.NumRows();
    
    if (A.NumCols() != n)
-      Error("solve: nonsquare matrix");
+      LogicError("solve: nonsquare matrix");
 
    if (n == 0) {
       set(d_out);
@@ -824,12 +824,12 @@ void inv(mat_ZZ& X, const mat_ZZ& A)
    if (d == -1)
       negate(X, X);
    else if (d != 1)
-      Error("inv: non-invertible matrix");
+      ArithmeticError("inv: non-invertible matrix");
 }
 
 void power(mat_ZZ& X, const mat_ZZ& A, const ZZ& e)
 {
-   if (A.NumRows() != A.NumCols()) Error("power: non-square matrix");
+   if (A.NumRows() != A.NumCols()) LogicError("power: non-square matrix");
 
    if (e == 0) {
       ident(X, A.NumRows());
@@ -890,7 +890,7 @@ void hadamard(ZZ& num_bound, ZZ& den_bound,
 {
    long n = A.NumRows();
 
-   if (n == 0) Error("internal error: hadamard with n = 0");
+   if (n == 0) LogicError("internal error: hadamard with n = 0");
 
    ZZ b_len, min_A_len, prod, t1;
 
@@ -929,7 +929,7 @@ void MixedMul(vec_ZZ& x, const vec_zz_p& a, const mat_ZZ& B)
    long l = B.NumCols();
 
    if (n != a.length())
-      Error("matrix mul: dimension mismatch");
+      LogicError("matrix mul: dimension mismatch");
 
    x.SetLength(l);
 
@@ -950,7 +950,7 @@ static
 void SubDiv(vec_ZZ& e, const vec_ZZ& t, long p)
 {
    long n = e.length();
-   if (t.length() != n) Error("SubDiv: dimension mismatch");
+   if (t.length() != n) LogicError("SubDiv: dimension mismatch");
 
    ZZ s;
    long i;
@@ -965,7 +965,7 @@ static
 void MulAdd(vec_ZZ& x, const ZZ& prod, const vec_zz_p& h)
 {
    long n = x.length();
-   if (h.length() != n) Error("MulAdd: dimension mismatch");
+   if (h.length() != n) LogicError("MulAdd: dimension mismatch");
 
    ZZ t;
    long i;
@@ -1088,10 +1088,10 @@ void solve1(ZZ& d_out, vec_ZZ& x_out, const mat_ZZ& A, const vec_ZZ& b)
    long n = A.NumRows();
 
    if (A.NumCols() != n)
-      Error("solve1: nonsquare matrix");
+      LogicError("solve1: nonsquare matrix");
 
    if (b.length() != n)
-      Error("solve1: dimension mismatch");
+      LogicError("solve1: dimension mismatch");
 
    if (n == 0) {
       set(d_out);
@@ -1184,40 +1184,38 @@ void solve1(ZZ& d_out, vec_ZZ& x_out, const mat_ZZ& A, const vec_ZZ& b)
    }
 
 
-   double **double_A;
-   double *double_h;
+   double **double_A=0;
+   double *double_h=0;
 
-   typedef double *double_ptr;
+   Unique2DArray<double> double_A_store;
+   UniqueArray<double> double_h_store;
+
 
    if (use_double_mul1 || use_double_mul2) {
-      double_h = NTL_NEW_OP double[n];
-      double_A = NTL_NEW_OP double_ptr[n];
-      if (!double_h || !double_A) Error("solve1: out of mem");
+      double_h_store.SetLength(n);
+      double_h = double_h_store.get();
 
-      for (i = 0; i < n; i++) {
-         double_A[i] = NTL_NEW_OP double[n];
-         if (!double_A[i]) Error("solve1: out of mem");
-      }
+      double_A_store.SetDims(n, n);
+      double_A = double_A_store.get();
 
       for (i = 0; i < n; i++)
          for (j = 0; j < n; j++)
             double_A[j][i] = to_double(A[i][j]);
    }
 
-   long **long_A;
-   long *long_h;
+   long **long_A=0;
+   long *long_h=0;
 
-   typedef long *long_ptr;
+   Unique2DArray<long> long_A_store;
+   UniqueArray<long> long_h_store;
+
 
    if (use_long_mul1 || use_long_mul2) {
-      long_h = NTL_NEW_OP long[n];
-      long_A = NTL_NEW_OP long_ptr[n];
-      if (!long_h || !long_A) Error("solve1: out of mem");
+      long_h_store.SetLength(n);
+      long_h = long_h_store.get();
 
-      for (i = 0; i < n; i++) {
-         long_A[i] = NTL_NEW_OP long[n];
-         if (!long_A[i]) Error("solve1: out of mem");
-      }
+      long_A_store.SetDims(n, n);
+      long_A = long_A_store.get();
 
       for (i = 0; i < n; i++)
          for (j = 0; j < n; j++)
@@ -1298,7 +1296,7 @@ void solve1(ZZ& d_out, vec_ZZ& x_out, const mat_ZZ& A, const vec_ZZ& b)
 
       if (!ReconstructRational(num[i], denom[i], x[i], prod, 
            num_bound, den_bound))
-          Error("solve1 internal error: rat recon failed!");
+          LogicError("solve1 internal error: rat recon failed!");
 
       mul(d, d, denom[i]);
 
@@ -1334,27 +1332,6 @@ void solve1(ZZ& d_out, vec_ZZ& x_out, const mat_ZZ& A, const vec_ZZ& b)
    }
 
    d_out = d;
-
-   if (use_double_mul1 || use_double_mul2) {
-      delete [] double_h;
-
-      for (i = 0; i < n; i++) {
-         delete [] double_A[i];
-      }
-
-      delete [] double_A;
-   }
-
-   if (use_long_mul1 || use_long_mul2) {
-      delete [] long_h;
-
-      for (i = 0; i < n; i++) {
-         delete [] long_A[i];
-      }
-
-      delete [] long_A;
-   }
-
 }
 
 NTL_END_IMPL

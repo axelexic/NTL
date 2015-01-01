@@ -81,7 +81,7 @@ vec_pair_ZZ_pX_long NewDDF(const ZZ_pX& f, const ZZ_pX& h,
 
 // which can be set by the user.  If the sizes of the tables
 // exceeds ZZ_pXFileThresh KB, external files are used.
-// Initial value is 256.
+// Initial value is NTL_FILE_THRESH (defined in tools.h).
 
 
 

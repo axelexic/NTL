@@ -34,6 +34,10 @@ the matrix is completely destroyed, and a new matrix is created
 
 \**************************************************************************/
 
+
+// EXCEPTIONS: all functions below do not throw any exceptions,
+//   except as noted
+
 template<class T>
 class Mat {
 
@@ -45,12 +49,25 @@ class Mat {
    Mat(); // initially 0 x 0
 
    Mat(const Mat<T>& a);
+   // copy constructor
+
+   // EXCEPTIONS: may throw
+
+
    Mat& operator=(const Mat<T>& a);
+   // assignment
+
+   // EXCEPTIONS: may throw, weak ES (but dimensions of LHS
+   //   will be either that of old LHS or RHS)
+
    ~Mat();
+   // destructor
 
    Mat(INIT_SIZE_TYPE, long n, long m); 
    // Mat(INIT_SIZE, n, m) initializes an n x m matrix, invoking
    // the default constructor for T to initialize entries.
+
+   // EXCEPTIONS: may throw
 
    void SetDims(long n, long m); 
    // M.SetDims(n, m) makes M have dimension n x m.  If the number of
@@ -59,6 +76,9 @@ class Mat {
    // allocated as necessary (when number of rows increases), 
    // excess rows are retained (when number of rows decreases),
    // and--importantly--the contents do not change.
+
+   // EXCEPTIONS: strong ES (although underlying vector representation
+   //    may be reallocated)
 
    void kill(); free storage and make 0 x 0
 
@@ -70,20 +90,31 @@ class Mat {
 
    Vec<T>& operator[](long i);
    const Vec<T>& operator[](long i) const;
-   // access row i, initial index 0.  Any attempt to change the length
-   // of this row will raise an error.
+   // access row i, initial index 0.  
+   // Even if one has read/write access to a row, any attempt
+   // to change its length will raise an error.
+
+   // EXCEPTIONS: may throw if range checking is turned on
 
    Vec<T>& operator()(long i);
    const Vec<T>& operator()(long i) const;
-   // access row i, initial index 1.  Any attempt to change the length
+   // access row i, initial index 1. 
+   // Even if one has read/write access to a row, any attempt
+   // to change its length will raise an error.
    // of this row will raise an error.
+
+   // EXCEPTIONS: may throw if range checking is turned on
 
    reference operator()(long i, long j);
    const_reference operator()(long i, long j) const; 
    // access element (i, j), both indices starting at 1
 
+   // EXCEPTIONS: may throw if range checking is turned on
+
    const_reference get(long i, long j) const;
    // access element (i, j), both indices starting at 0
+
+   // EXCEPTIONS: may throw if range checking is turned on
 
    void put(long i, long j, const T& a);
    // same as M[i].put(j, a)
@@ -92,17 +123,16 @@ class Mat {
    void put(long i, long j, const U& a);
    // same as M[i].put(j, a)
 
-
    long position(const Vec<T>& a) const;
    // returns index of a in matrix, or -1 if not present;
    // equivalent to rep(*this).position(a).
-
 
    long position1(const Vec<T>& a) const;
    // returns index of a in matrix, or -1 if not present;
    // equivalent to rep(*this).position1(a).
 
-  
+   void swap(Mat<T>& other);
+   // quick swap *this and other
 
 };
 
@@ -112,11 +142,14 @@ const Vec< Vec<T> >& rep(const Mat<T>& a);
 
 template<class T>
 void swap(Mat<T>& X, Mat<T>& Y);
-// swaps X and Y (by swapping pointers)
+// quick swap of X and Y 
 
 template<class T>
 void MakeMatrix(Mat<T>& x, const vec_vec_T& a);
 // copies a to x, checking that it is "rectangular"
+
+// EXCEPTIONS: may thow, weak ES (but dimensions of x either
+//    remain unchanged or are set to the new dimensions implied by a)
 
 /**************************************************************************\
 
@@ -128,8 +161,13 @@ void MakeMatrix(Mat<T>& x, const vec_vec_T& a);
 template<class T>
 istream& operator>>(istream&, Mat<T>&);
 
+// EXCEPTIONS: may throw, weak ES
+
 template<class T>
 ostream& operator<<(ostream&, const Mat<T>&); 
+
+// EXCEPTIONS: may throw, weak ES
+
 
 /**************************************************************************\
 

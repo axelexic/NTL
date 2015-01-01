@@ -170,9 +170,13 @@ nomenclature:
      vector of the polynomial.
  
 [11] The GF2X/ZZ_pX/zz_pX to GF2E/ZZ_pE/zz_pE conversions reduce
-     the given polynomial modulo the current modulus.
+     the given polynomial modulo the current modulus; the reverse
+     conversions yield the standard representative (smallest degree polynomial).
+
+[12] Conversions from GF2, zz_p or ZZ_p to any integral type yeld 
+     the standard representative (least non-negative) of the given residue class.
  
-[12] All conversions from the type cstr apply the same algorithm
+[13] All conversions from the type cstr apply the same algorithm
      as is used for reading from an I/O stream, so 
         ZZ x = conv<ZZ>("999999999999999999");
      initializes the ZZ x to the integer 999999999999999999.

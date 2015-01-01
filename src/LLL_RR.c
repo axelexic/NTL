@@ -13,7 +13,8 @@ NTL_START_IMPL
 static void RowTransform(vec_ZZ& A, vec_ZZ& B, const ZZ& MU1)
 // x = x - y*MU
 {
-   static ZZ T, MU;
+   NTL_ZZRegister(T);
+   NTL_ZZRegister(MU);
    long k;
 
    long n = A.length();
@@ -65,7 +66,8 @@ static void RowTransform(vec_ZZ& A, vec_ZZ& B, const ZZ& MU1)
 static void RowTransform2(vec_ZZ& A, vec_ZZ& B, const ZZ& MU1)
 // x = x + y*MU
 {
-   static ZZ T, MU;
+   NTL_ZZRegister(T);
+   NTL_ZZRegister(MU);
    long k;
 
    long n = A.length();
@@ -160,8 +162,8 @@ void ComputeGS(const mat_ZZ& B, mat_RR& B1,
    sub(c(k), b(k), s);
 }
 
-static RR red_fudge;
-static long log_red = 0;
+NTL_THREAD_LOCAL static RR red_fudge;
+NTL_THREAD_LOCAL static long log_red = 0;
 
 static void init_red_fudge()
 {
@@ -179,17 +181,16 @@ static void inc_red_fudge()
    cerr << "LLL_RR: warning--relaxing reduction (" << log_red << ")\n";
 
    if (log_red < 4)
-      Error("LLL_RR: can not continue...sorry");
+      ResourceError("LLL_RR: can not continue...sorry");
 }
 
 
 
 
-static long verbose = 0;
-
-static unsigned long NumSwaps = 0;
-static double StartTime = 0;
-static double LastTime = 0;
+NTL_THREAD_LOCAL static long verbose = 0;
+NTL_THREAD_LOCAL static unsigned long NumSwaps = 0;
+NTL_THREAD_LOCAL static double StartTime = 0;
+NTL_THREAD_LOCAL static double LastTime = 0;
 
 
 
@@ -561,8 +562,8 @@ long LLL_RR(mat_ZZ& B, double delta, long deep,
       LastTime = StartTime;
    }
 
-   if (delta < 0.50 || delta >= 1) Error("LLL_RR: bad delta");
-   if (deep < 0) Error("LLL_RR: bad deep");
+   if (delta < 0.50 || delta >= 1) LogicError("LLL_RR: bad delta");
+   if (deep < 0) LogicError("LLL_RR: bad deep");
    RR Delta;
    conv(Delta, delta);
    return LLL_RR(B, 0, Delta, deep, check);
@@ -578,8 +579,8 @@ long LLL_RR(mat_ZZ& B, mat_ZZ& U, double delta, long deep,
       LastTime = StartTime;
    }
 
-   if (delta < 0.50 || delta >= 1) Error("LLL_RR: bad delta");
-   if (deep < 0) Error("LLL_RR: bad deep");
+   if (delta < 0.50 || delta >= 1) LogicError("LLL_RR: bad delta");
+   if (deep < 0) LogicError("LLL_RR: bad deep");
    RR Delta;
    conv(Delta, delta);
    return LLL_RR(B, &U, Delta, deep, check);
@@ -587,7 +588,7 @@ long LLL_RR(mat_ZZ& B, mat_ZZ& U, double delta, long deep,
 
 
 
-static vec_RR BKZConstant;
+NTL_THREAD_LOCAL static vec_RR BKZConstant;
 
 static
 void ComputeBKZConstant(long beta, long p)
@@ -641,7 +642,7 @@ void ComputeBKZConstant(long beta, long p)
 
 }
 
-static vec_RR BKZThresh;
+NTL_THREAD_LOCAL static vec_RR BKZThresh;
 
 static 
 void ComputeBKZThresh(RR *c, long beta)
@@ -1004,7 +1005,7 @@ long BKZ_RR(mat_ZZ& BB, mat_ZZ* UU, const RR& delta,
                }
             }
    
-            if (s == 0) Error("BKZ_RR: internal error");
+            if (s == 0) LogicError("BKZ_RR: internal error");
    
             if (s > 0) {
                // special case
@@ -1022,7 +1023,7 @@ long BKZ_RR(mat_ZZ& BB, mat_ZZ* UU, const RR& delta,
    
                new_m = ll_LLL_RR(B, U, delta, 0, check, 
                                 B1, mu, b, c, h, jj, quit);
-               if (new_m != h) Error("BKZ_RR: internal error");
+               if (new_m != h) LogicError("BKZ_RR: internal error");
                if (quit) break;
             }
             else {
@@ -1057,14 +1058,14 @@ long BKZ_RR(mat_ZZ& BB, mat_ZZ* UU, const RR& delta,
       
                InnerProduct(b(jj), B1(jj), B1(jj));
       
-               if (b(jj) == 0) Error("BKZ_RR: internal error"); 
+               if (b(jj) == 0) LogicError("BKZ_RR: internal error"); 
       
                // remove linear dependencies
    
                // cerr << "general case\n";
                new_m = ll_LLL_RR(B, U, delta, 0, 0, B1, mu, b, c, kk+1, jj, quit);
               
-               if (new_m != kk) Error("BKZ_RR: internal error"); 
+               if (new_m != kk) LogicError("BKZ_RR: internal error"); 
 
                // remove zero vector
       
@@ -1093,7 +1094,7 @@ long BKZ_RR(mat_ZZ& BB, mat_ZZ* UU, const RR& delta,
                   new_m = ll_LLL_RR(B, U, delta, 0, check, 
                                    B1, mu, b, c, h, h, quit);
    
-                  if (new_m != h) Error("BKZ_RR: internal error");
+                  if (new_m != h) LogicError("BKZ_RR: internal error");
                   if (quit) break;
                }
             }
@@ -1109,7 +1110,7 @@ long BKZ_RR(mat_ZZ& BB, mat_ZZ* UU, const RR& delta,
             if (!clean) {
                new_m = 
                   ll_LLL_RR(B, U, delta, 0, check, B1, mu, b, c, h, h, quit);
-               if (new_m != h) Error("BKZ_RR: internal error");
+               if (new_m != h) LogicError("BKZ_RR: internal error");
                if (quit) break;
             }
    
@@ -1161,8 +1162,8 @@ long BKZ_RR(mat_ZZ& BB, mat_ZZ& UU, double delta,
       LastTime = StartTime;
    }
 
-   if (delta < 0.50 || delta >= 1) Error("BKZ_RR: bad delta");
-   if (beta < 2) Error("BKZ_RR: bad block size");
+   if (delta < 0.50 || delta >= 1) LogicError("BKZ_RR: bad delta");
+   if (beta < 2) LogicError("BKZ_RR: bad block size");
 
    RR Delta;
    conv(Delta, delta);
@@ -1180,8 +1181,8 @@ long BKZ_RR(mat_ZZ& BB, double delta,
       LastTime = StartTime;
    }
 
-   if (delta < 0.50 || delta >= 1) Error("BKZ_RR: bad delta");
-   if (beta < 2) Error("BKZ_RR: bad block size");
+   if (delta < 0.50 || delta >= 1) LogicError("BKZ_RR: bad delta");
+   if (beta < 2) LogicError("BKZ_RR: bad block size");
 
    RR Delta;
    conv(Delta, delta);
@@ -1197,10 +1198,10 @@ void NearVector(vec_ZZ& ww, const mat_ZZ& BB, const vec_ZZ& a)
    long n = BB.NumCols();
 
    if (n != BB.NumRows())
-      Error("NearVector: matrix must be square");
+      LogicError("NearVector: matrix must be square");
 
    if (n != a.length())
-      Error("NearVector: dimension mismatch");
+      LogicError("NearVector: dimension mismatch");
 
    long i, j;
    mat_ZZ B;

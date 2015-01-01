@@ -45,6 +45,8 @@ public:
    void kill();
 
    void SetLength(long n);
+   void SetLength(long n, GF2 a);
+
    void SetMaxLength(long n);
    void FixLength(long n);
 
@@ -72,6 +74,11 @@ public:
    const GF2 operator()(long i) const 
       { return get(i-1); }
 
+   void swap(Vec<GF2>& y);
+   void append(GF2 a);
+   void append(const Vec<GF2>& w);
+
+
 
 
 // Some partial STL compatibility...also used
@@ -92,9 +99,9 @@ inline void conv(vec_GF2& x, const vec_GF2& a)
 {  x = a; }
 
 
-void swap(vec_GF2& x, vec_GF2& y);
-void append(vec_GF2& v, const GF2& a);
-void append(vec_GF2& v, const vec_GF2& a);
+inline void swap(vec_GF2& x, vec_GF2& y) { x.swap(y); }
+inline void append(vec_GF2& v, const GF2 a) { v.append(a); }
+inline void append(vec_GF2& v, const vec_GF2& a) { v.append(a); }
 
 long operator==(const vec_GF2& a, const vec_GF2& b);
 inline long operator!=(const vec_GF2& a, const vec_GF2& b)

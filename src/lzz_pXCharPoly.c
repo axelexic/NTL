@@ -9,7 +9,7 @@ void HessCharPoly(zz_pX& g, const zz_pX& a, const zz_pX& f)
 {
    long n = deg(f);
    if (n <= 0 || deg(a) >= n)
-      Error("HessCharPoly: bad args");
+      LogicError("HessCharPoly: bad args");
 
    mat_zz_p M;
    M.SetDims(n, n);
@@ -37,7 +37,7 @@ void CharPolyMod(zz_pX& g, const zz_pX& a, const zz_pX& ff)
    long n = deg(f);
 
    if (n <= 0 || deg(a) >= n) 
-      Error("CharPoly: bad args");
+      LogicError("CharPoly: bad args");
 
    if (IsZero(a)) {
       clear(g);

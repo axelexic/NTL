@@ -57,6 +57,9 @@ public:
    ZZ& operator[](long i);
    const ZZ& operator[](long i) const;
    // indexing operator; starts at 0; no range checking
+
+   swap(ZZVec& x);
+   // swap with x by swapping pointers
 };
 
 

@@ -5,7 +5,6 @@ A Tour of NTL: Tips for Getting the Best Performance out of NTL
 </title>
 </head>
 
-<body bgcolor="#fff9e6">
 <center>
 <a href="tour-win.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
  <a href="tour.html"><img src="arrow2.gif" alt="[Up]" align=bottom></a> 
@@ -23,7 +22,7 @@ A Tour of NTL: Tips for Getting the Best Performance out of NTL
 <ol>
 
 <li>
-Build NTL using GMP as the primary long integer package.
+Build NTL using GMP as the long integer package.
 This is extremely important, as the GMP implementation
 of long integer arithmetic is <i>much</i> faster
 than the default implementation.
@@ -41,6 +40,8 @@ pass <tt>"CFLAGS=-O2 -m64"</tt>
 to the <tt>configure</tt> script (note the use of quotes).
 If you are using NTL with GMP on such a machine,
 you <i>must</i> do this to get compatible code.
+Note, however, that 64-bit is becoming the default, so this
+may not be necessary.
 
 <p>
 <li>
@@ -63,7 +64,7 @@ easy way to run the wizard.
 In time-critical code, avoid creating unnecessary temporary
 objects.
 For example, instead of
-<pre>
+<!-- STARTPLAIN
 ZZ InnerProduct(const ZZ *a, const ZZ *b, long n)
 {
    long i;
@@ -72,9 +73,24 @@ ZZ InnerProduct(const ZZ *a, const ZZ *b, long n)
       res += a[i] * b[i];
    return res;
 }
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000">
+<font face="monospace">
+ZZ InnerProduct(<font color="#008b00"><b>const</b></font>&nbsp;ZZ *a,&nbsp;<font color="#008b00"><b>const</b></font>&nbsp;ZZ *b,&nbsp;<font color="#008b00"><b>long</b></font>&nbsp;n)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;<font color="#008b00"><b>long</b></font>&nbsp;i;<br>
+&nbsp;&nbsp; ZZ res;<br>
+&nbsp;&nbsp;&nbsp;<font color="#b03060"><b>for</b></font>&nbsp;(i =&nbsp;<font color="#ff8c00">0</font>; i &lt; n; i++)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res += a[i] * b[i];<br>
+&nbsp;&nbsp;&nbsp;<font color="#b03060"><b>return</b></font>&nbsp;res;<br>
+}<br>
+</font>
+</font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 write this as
-<pre>
+<!-- STARTPLAIN
 ZZ InnerProduct(const ZZ *a, const ZZ *b, long n)
 {
    long i;
@@ -85,7 +101,24 @@ ZZ InnerProduct(const ZZ *a, const ZZ *b, long n)
    }
    return res;
 }
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000">
+<font face="monospace">
+ZZ InnerProduct(<font color="#008b00"><b>const</b></font>&nbsp;ZZ *a,&nbsp;<font color="#008b00"><b>const</b></font>&nbsp;ZZ *b,&nbsp;<font color="#008b00"><b>long</b></font>&nbsp;n)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;<font color="#008b00"><b>long</b></font>&nbsp;i;<br>
+&nbsp;&nbsp; ZZ res, t;<br>
+&nbsp;&nbsp;&nbsp;<font color="#b03060"><b>for</b></font>&nbsp;(i =&nbsp;<font color="#ff8c00">0</font>; i &lt; n; i++) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mul(t, a[i], b[i]);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add(res, res, t);<br>
+&nbsp;&nbsp; }<br>
+&nbsp;&nbsp;&nbsp;<font color="#b03060"><b>return</b></font>&nbsp;res;<br>
+}<br>
+</font>
+</font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 The first version of <tt>InnerProduct</tt>
 creates and destroys a temporary object, holding the value
 <tt>a[i]*b[i]</tt>, in every loop iteration.
@@ -100,7 +133,7 @@ If you use the class <tt>ZZ_p</tt>, try to avoid switching the modulus
 too often, as this can be a rather expensive operation.
 If you <i>must</i> switch the modulus often,
 use the class <tt>ZZ_pContext</tt> to save the information
-associated with the modulus (see <a href="ZZ.txt">ZZ.txt</a>). 
+associated with the modulus (see <a href="ZZ_p.cpp.html">ZZ_p.txt</a>). 
 
 
 

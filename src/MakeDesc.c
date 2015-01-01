@@ -76,7 +76,7 @@ long DoubleRounding(long dp)
 
 
 
-long DoublePrecision(void)
+long DoublePrecision()
 {
    double eps, one, res;
    long k;
@@ -99,7 +99,7 @@ long DoublePrecision(void)
    return k;
 }
 
-long DoublePrecision1(void)
+long DoublePrecision1()
 {
    double eps, one, res;
    long k;
@@ -121,30 +121,6 @@ long DoublePrecision1(void)
    return k;
 }
 
-
-union d_or_rep {
-   double d;
-   unsigned long rep[2];
-};
-
-long RepTest(void)
-{
-   union d_or_rep v;
-
-   if (sizeof(double) != 2*sizeof(long))
-      return 0;
-
-   v.rep[0] = v.rep[1] = 0;
-
-   v.d = 565656565656.0;
-
-   if (v.rep[0] == 0x42607678 && v.rep[1] == 0x46f30000)
-      return 1;
-   else if (v.rep[1] == 0x42607678 && v.rep[0] == 0x46f30000)
-      return -1;
-   else
-      return 0;
-}
 
 void print2k(FILE *f, long k, long bpl)
 {
@@ -712,7 +688,7 @@ void print_BB_rev_code(FILE *f, long n)
 
 
 
-char *yn_vec[2] = { "no", "yes" }; 
+const char *yn_vec[2] = { "no", "yes" }; 
 
 
 
@@ -974,23 +950,6 @@ int main()
    if (nbits % 2 != 0) nbits--;
 
 
-   /* 
-    * We next test if the NTL_SINGLE_MUL option is valid.  This test is
-    * inherently DIRTY (i.e., the behavior of the test itself is not well
-    * defined according to the standard), but in practice should not cause any
-    * bad behavior, especially if the NTL_SINGLE_MUL option is never used.
-    * This option is anyway considered fairly obsolete, and if desired, one may
-    * change the following "if 1" to "if 0" and avoid performing this test
-    * altogether.
-    */
-
-#if 1
-   single_mul_ok = RepTest();
-#else
-   single_mul_ok = 0;
-#endif
-
-
    /*
     * That's it!  All tests have passed.
     */
@@ -1003,7 +962,6 @@ int main()
    fprintf(stderr, "arith right shift = %s\n", yn_vec[rs_arith]);
    fprintf(stderr, "double precision = %ld\n", dp);
    fprintf(stderr, "NBITS (maximum) = %ld\n", nbits);
-   fprintf(stderr, "single mul ok = %s\n", yn_vec[single_mul_ok != 0]);
    fprintf(stderr, "register double precision = %ld\n", dp1);
    fprintf(stderr, "double rounding detected = %s\n", yn_vec[dr]);  
 

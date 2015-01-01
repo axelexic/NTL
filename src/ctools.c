@@ -5,9 +5,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#if (defined(NTL_CXX_ONLY) && !defined(__cplusplus))
-#error "CXX_ONLY flag set...must use C++ compiler"
-#endif
 
 /*
  * An IEEE double x is finite if and only if x - x == 0.
@@ -15,18 +12,18 @@
  * it does not completely trust that an optimizing compiler
  * really implements this correctly, and so it goes out of its way to
  * confuse the compiler.  For a good compiler that respects IEEE floating
- * point arithmetic, this is not be necessary, but it is better
+ * point arithmetic, this may not be necessary, but it is better
  * to be a bit paranoid.
  *
  * Like the routine _ntl_ForceToMem below, this routine has the
  * side effect of forcing its argument into memory.
  */
 
-double _ntl_IsFinite__local;
-double *_ntl_IsFinite__ptr1 = &_ntl_IsFinite__local;
-double *_ntl_IsFinite__ptr2 = &_ntl_IsFinite__local;
-double *_ntl_IsFinite__ptr3 = &_ntl_IsFinite__local;
-double *_ntl_IsFinite__ptr4 = &_ntl_IsFinite__local;
+NTL_THREAD_LOCAL volatile double _ntl_IsFinite__local;
+NTL_THREAD_LOCAL volatile double *_ntl_IsFinite__ptr1 = &_ntl_IsFinite__local;
+NTL_THREAD_LOCAL volatile double *_ntl_IsFinite__ptr2 = &_ntl_IsFinite__local;
+NTL_THREAD_LOCAL volatile double *_ntl_IsFinite__ptr3 = &_ntl_IsFinite__local;
+NTL_THREAD_LOCAL volatile double *_ntl_IsFinite__ptr4 = &_ntl_IsFinite__local;
 
 long _ntl_IsFinite(double *p)
 {
@@ -45,8 +42,21 @@ long _ntl_IsFinite(double *p)
  */
 
 
+#if (NTL_EXT_DOUBLE)
+
+void _ntl_ForceToMem(double *p)
+{
+   *_ntl_IsFinite__ptr1 = *p;
+   *p = *_ntl_IsFinite__ptr2;
+}
+
+
+#else
+
 void _ntl_ForceToMem(double *p)
 { }
+
+#endif
 
 
 
@@ -64,7 +74,7 @@ void _ntl_ForceToMem(double *p)
  * overly-agressive optimizing compilers from screwing things up.
  */
 
-double _ntl_ldexp_zero = 0.0;
+NTL_THREAD_LOCAL volatile double _ntl_ldexp_zero = 0.0;
 
 double _ntl_ldexp(double x, long e)
 {
@@ -77,7 +87,7 @@ double _ntl_ldexp(double x, long e)
 }
 
 
-void _ntl_abort(void)
+void _ntl_abort()
 {
    _ntl_abort_cxx_callback();
    abort();

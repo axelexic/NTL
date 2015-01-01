@@ -7,11 +7,7 @@ fi
 echo "does anybody really know what time it is?"
 
 
-if test -f TestGetTime
-then
 sh RemoveProg TestGetTime
-fi
-
 echo $1 -o TestGetTime TestGetTime.c GetTime1.c $2
 $1 -o TestGetTime TestGetTime.c GetTime1.c $2
 
@@ -25,11 +21,8 @@ exit 0
 fi
 fi
 
-if test -f TestGetTime
-then
-sh RemoveProg TestGetTime
-fi
 
+sh RemoveProg TestGetTime
 echo $1 -o TestGetTime TestGetTime.c GetTime2.c $2
 $1 -o TestGetTime TestGetTime.c GetTime2.c $2
 
@@ -43,11 +36,7 @@ exit 0
 fi
 fi
 
-if test -f TestGetTime
-then
 sh RemoveProg TestGetTime
-fi
-
 echo $1 -o TestGetTime TestGetTime.c GetTime3.c $2
 $1 -o TestGetTime TestGetTime.c GetTime3.c $2
 
@@ -61,11 +50,7 @@ exit 0
 fi
 fi
 
-if test -f TestGetTime
-then
 sh RemoveProg TestGetTime
-fi
-
 echo $1 -o TestGetTime TestGetTime.c GetTime4.c $2
 $1 -o TestGetTime TestGetTime.c GetTime4.c $2
 
@@ -80,11 +65,7 @@ exit 0
 fi
 fi
 
-if test -f TestGetTime
-then
 sh RemoveProg TestGetTime
-fi
-
 echo $1 -o TestGetTime TestGetTime.c GetTime5.c $2
 $1 -o TestGetTime TestGetTime.c GetTime5.c $2
 
@@ -96,7 +77,7 @@ echo "using GetTime5.c"
 echo "warning: this GetTime function always returns 0"
 exit 0
 else
-echo "some thing is wrong..."
+echo "something is wrong..."
 exit 1
 fi
 

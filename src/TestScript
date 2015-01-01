@@ -180,4 +180,16 @@ echo "running lzz_pEXTest"
 ./lzz_pEXTest 
 sh RemoveProg lzz_pEXTest
 
+
+echo
+echo "---------------------------------"
+echo "making ThreadTest"
+make ThreadTest
+echo "running ThreadTest"
+./ThreadTest 
+sh RemoveProg ThreadTest
+
+echo
+
+
 exit 0

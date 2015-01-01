@@ -123,7 +123,7 @@ int main()
          BKZ_RR(B, 0.99, size, prune, SubsetSumSolution);
          break;
       default:
-         Error("invalid algorithm");
+         TerminalError("invalid algorithm");
       }
 
 

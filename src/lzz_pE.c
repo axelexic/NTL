@@ -8,63 +8,34 @@ NTL_START_IMPL
 
 zz_pEInfoT::zz_pEInfoT(const zz_pX& NewP)
 {
-   ref_count = 1;
-
    build(p, NewP);
 
-   _card_init = 0;
    _card_base = zz_p::modulus();
    _card_exp = deg(NewP);
 }
 
 const ZZ& zz_pE::cardinality()
 {
-   if (!zz_pEInfo) Error("zz_pE::cardinality: undefined modulus");
+   if (!zz_pEInfo) LogicError("zz_pE::cardinality: undefined modulus");
 
-   if (!zz_pEInfo->_card_init) {
-      power(zz_pEInfo->_card, zz_pEInfo->_card_base, zz_pEInfo->_card_exp);
-      zz_pEInfo->_card_init = 1;
-   }
 
-   return zz_pEInfo->_card;
+   do { // NOTE: thread safe lazy init
+      Lazy<ZZ>::Builder builder(zz_pEInfo->_card);
+      if (!builder()) break;
+      UniquePtr<ZZ> p;
+      p.make();
+      power(*p, zz_pEInfo->_card_base, zz_pEInfo->_card_exp);
+      builder.move(p);
+   } while (0);
+
+   return *zz_pEInfo->_card;
 }
 
 
 
 
 
-zz_pEInfoT *zz_pEInfo = 0; 
-
-
-
-typedef zz_pEInfoT *zz_pEInfoPtr;
-
-
-static 
-void CopyPointer(zz_pEInfoPtr& dst, zz_pEInfoPtr src)
-{
-   if (src == dst) return;
-
-   if (dst) {
-      dst->ref_count--;
-
-      if (dst->ref_count < 0) 
-         Error("internal error: negative zz_pEContext ref_count");
-
-      if (dst->ref_count == 0) delete dst;
-   }
-
-   if (src) {
-      if (src->ref_count == NTL_MAX_LONG) 
-         Error("internal error: zz_pEContext ref_count overflow");
-
-      src->ref_count++;
-   }
-
-   dst = src;
-}
-   
-
+NTL_THREAD_LOCAL SmartPtr<zz_pEInfoT> zz_pEInfo = 0; 
 
 
 void zz_pE::init(const zz_pX& p)
@@ -74,76 +45,43 @@ void zz_pE::init(const zz_pX& p)
 }
 
 
-zz_pEContext::zz_pEContext(const zz_pX& p)
-{
-   ptr = NTL_NEW_OP zz_pEInfoT(p);
-}
-
-zz_pEContext::zz_pEContext(const zz_pEContext& a)
-{
-   ptr = 0;
-   CopyPointer(ptr, a.ptr);
-}
-
-zz_pEContext& zz_pEContext::operator=(const zz_pEContext& a)
-{
-   CopyPointer(ptr, a.ptr);
-   return *this;
-}
-
-
-zz_pEContext::~zz_pEContext()
-{
-   CopyPointer(ptr, 0);
-}
-
 void zz_pEContext::save()
 {
-   CopyPointer(ptr, zz_pEInfo);
+   ptr = zz_pEInfo;
 }
 
 void zz_pEContext::restore() const
 {
-   CopyPointer(zz_pEInfo, ptr);
+   zz_pEInfo = ptr;
 }
-
 
 
 zz_pEBak::~zz_pEBak()
 {
-   if (MustRestore)
-      CopyPointer(zz_pEInfo, ptr);
-
-   CopyPointer(ptr, 0);
+   if (MustRestore) c.restore();
 }
 
 void zz_pEBak::save()
 {
-   MustRestore = 1;
-   CopyPointer(ptr, zz_pEInfo);
+   c.save();
+   MustRestore = true;
 }
-
 
 
 void zz_pEBak::restore()
 {
-   MustRestore = 0;
-   CopyPointer(zz_pEInfo, ptr);
+   c.restore();
+   MustRestore = false;
 }
 
 
 
 const zz_pE& zz_pE::zero()
 {
-   static zz_pE z(zz_pE_NoAlloc);
+   NTL_THREAD_LOCAL static zz_pE z(INIT_NO_ALLOC);
    return z;
 }
 
-
-zz_pE::zz_pE()
-{
-   _zz_pE__rep.rep.SetMaxLength(zz_pE::degree());
-}
 
 
 
@@ -151,7 +89,7 @@ istream& operator>>(istream& s, zz_pE& x)
 {
    zz_pX y;
 
-   s >> y;
+   NTL_INPUT_CHECK_RET(s, s >> y);
    conv(x, y);
 
    return s;

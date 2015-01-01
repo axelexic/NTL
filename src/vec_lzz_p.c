@@ -47,8 +47,8 @@ void InnerProduct(zz_p& x, const vec_zz_p& a, const vec_zz_p& b)
 void InnerProduct(zz_p& x, const vec_zz_p& a, const vec_zz_p& b,
                   long offset)
 {
-   if (offset < 0) Error("InnerProduct: negative offset");
-   if (NTL_OVERFLOW(offset, 1, 0)) Error("InnerProduct: offset too big");
+   if (offset < 0) LogicError("InnerProduct: negative offset");
+   if (NTL_OVERFLOW(offset, 1, 0)) ResourceError("InnerProduct: offset too big");
 
    long n = min(a.length(), b.length()+offset);
    long i;
@@ -66,7 +66,7 @@ void InnerProduct(zz_p& x, const vec_zz_p& a, const vec_zz_p& b,
 long CRT(vec_ZZ& gg, ZZ& a, const vec_zz_p& G)
 {
    long n = gg.length();
-   if (G.length() != n) Error("CRT: vector length mismatch");
+   if (G.length() != n) LogicError("CRT: vector length mismatch");
 
    long p = zz_p::modulus();
 
@@ -135,7 +135,7 @@ void mul(vec_zz_p& x, const vec_zz_p& a, zz_p b)
    if (n <= 1) {
 
       for (i = 0; i < n; i++)
-	 mul(x[i], a[i], b);
+         mul(x[i], a[i], b);
 
    }
    else {
@@ -167,7 +167,7 @@ void mul(vec_zz_p& x, const vec_zz_p& a, long b_in)
 void add(vec_zz_p& x, const vec_zz_p& a, const vec_zz_p& b)
 {
    long n = a.length();
-   if (b.length() != n) Error("vector add: dimension mismatch");
+   if (b.length() != n) LogicError("vector add: dimension mismatch");
 
    x.SetLength(n);
    long i;
@@ -178,7 +178,7 @@ void add(vec_zz_p& x, const vec_zz_p& a, const vec_zz_p& b)
 void sub(vec_zz_p& x, const vec_zz_p& a, const vec_zz_p& b)
 {
    long n = a.length();
-   if (b.length() != n) Error("vector sub: dimension mismatch");
+   if (b.length() != n) LogicError("vector sub: dimension mismatch");
    x.SetLength(n);
    long i;
    for (i = 0; i < n; i++)
@@ -248,8 +248,8 @@ zz_p operator*(const vec_zz_p& a, const vec_zz_p& b)
 
 void VectorCopy(vec_zz_p& x, const vec_zz_p& a, long n)
 {
-   if (n < 0) Error("VectorCopy: negative length");
-   if (NTL_OVERFLOW(n, 1, 0)) Error("overflow in VectorCopy");
+   if (n < 0) LogicError("VectorCopy: negative length");
+   if (NTL_OVERFLOW(n, 1, 0)) ResourceError("overflow in VectorCopy");
 
    long m = min(n, a.length());
 

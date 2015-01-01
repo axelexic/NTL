@@ -7,6 +7,7 @@ mkdir dos/include
 mkdir dos/include/NTL
 mkdir dos/doc
 mkdir dos/GetTime
+mkdir dos/GetPID
 mkdir dos/MakeDesc
 mkdir dos/misc
 mkdir dos/tests
@@ -14,6 +15,8 @@ mkdir dos/tests
 cp ../README dos/README.txt
 
 cp GetTime4.c dos/src/GetTime.cpp
+
+cp GetPID2.c dos/src/GetPID.cpp
 
 cp mach_desc.win dos/include/NTL/mach_desc.h
 
@@ -24,12 +27,14 @@ cp GetTime3.c dos/GetTime/GetTime3.cpp
 cp GetTime4.c dos/GetTime/GetTime4.cpp
 cp GetTime5.c dos/GetTime/GetTime5.cpp
 
+cp GetPID1.c dos/GetPID/GetPID1.cpp
+cp GetPID2.c dos/GetPID/GetPID2.cpp
+
 cp MakeDesc.c dos/MakeDesc/MakeDesc.cpp
 cp MakeDescAux.c dos/MakeDesc/MakeDescAux.cpp
 
 cp newnames.c dos/misc/newnames.cpp
 cp gen_gmp_aux.c dos/misc/gen_gmp_aux.cpp
-cp gen_lip_gmp_aux.c dos/misc/gen_lip_gmp_aux.cpp
 
 for i in $1
 do

@@ -11,10 +11,9 @@
 
 NTL_START_IMPL
 
-long ZZXFac_van_Hoeij = 1;
+NTL_THREAD_LOCAL long ZZXFac_van_Hoeij = 1;
 
-static
-long ok_to_abandon = 0;
+NTL_THREAD_LOCAL static long ok_to_abandon = 0;
 
 struct LocalInfoT {
    long n;
@@ -158,7 +157,7 @@ void HenselLift(ZZX& Gout, ZZX& Hout, ZZX& Aout, ZZX& Bout,
    sub(c, f, c);
 
    if (!divide(c, c, p))
-      Error("inexact division");
+      LogicError("inexact division");
 
    ZZ_pX cc, gg, hh, aa, bb, tt, gg1, hh1;
 
@@ -205,7 +204,7 @@ void HenselLift(ZZX& Gout, ZZX& Hout, ZZX& Aout, ZZX& Bout,
    negate(t1, t1);
 
    if (!divide(r, t1, p))
-      Error("inexact division");
+      LogicError("inexact division");
 
    ZZ_pX rr, aa1, bb1;
 
@@ -243,7 +242,7 @@ void HenselLift1(ZZX& Gout, ZZX& Hout,
    sub(c, f, c);
 
    if (!divide(c, c, p))
-      Error("inexact division");
+      LogicError("inexact division");
 
    ZZ_pX cc, gg, hh, aa, bb, tt, gg1, hh1;
 
@@ -283,7 +282,7 @@ void BuildTree(vec_long& link, vec_ZZX& v, vec_ZZX& w,
 {
    long k = a.length();
 
-   if (k < 2) Error("bad arguments to BuildTree");
+   if (k < 2) LogicError("bad arguments to BuildTree");
 
    vec_zz_pX V, W;
 
@@ -334,7 +333,7 @@ void BuildTree(vec_long& link, vec_ZZX& v, vec_ZZX& w,
    for (j = 0; j < 2*k-2; j += 2) {
       XGCD(d, W[j], W[j+1], V[j], V[j+1]);
       if (!IsOne(d))
-         Error("relatively prime polynomials expected");
+         LogicError("relatively prime polynomials expected");
    }
 
    v.SetLength(2*k-2);
@@ -390,14 +389,14 @@ void MultiLift(vec_ZZX& A, const vec_zz_pX& a, const ZZX& f, long e,
    long k = a.length();
    long i;
 
-   if (k < 2 || e < 1 || NTL_OVERFLOW(e, 1, 0)) Error("MultiLift: bad args");
+   if (k < 2 || e < 1 || NTL_OVERFLOW(e, 1, 0)) LogicError("MultiLift: bad args");
 
    if (!IsOne(LeadCoeff(f)))
-      Error("MultiLift: bad args");
+      LogicError("MultiLift: bad args");
 
    for (i = 0; i < a.length(); i++)
       if (!IsOne(LeadCoeff(a[i])))
-         Error("MultiLift: bad args");
+         LogicError("MultiLift: bad args");
 
    if (e == 1) {
       A.SetLength(k);
@@ -465,8 +464,8 @@ void inplace_rev(ZZX& f)
    f.normalize();
 }
 
-long ZZXFac_InitNumPrimes = 7;
-long ZZXFac_MaxNumPrimes = 50;
+NTL_THREAD_LOCAL long ZZXFac_InitNumPrimes = 7;
+NTL_THREAD_LOCAL long ZZXFac_MaxNumPrimes = 50;
 
 static 
 void RecordPattern(vec_long& pat, vec_pair_zz_pX_long& fac)
@@ -532,7 +531,7 @@ void CalcPossibleDegrees(vec_ZZ& S, const vec_ZZ_pX& fac, long k)
       return;
 
    if (k < 1 || k > r)
-      Error("CalcPossibleDegrees: bad args");
+      LogicError("CalcPossibleDegrees: bad args");
 
    long i, l;
    ZZ old, t1;
@@ -579,10 +578,10 @@ SmallPrimeFactorization(LocalInfoT& LocalInfo, const ZZX& f,
    // some sanity checking...
 
    if (ZZXFac_InitNumPrimes < 1 || ZZXFac_InitNumPrimes > 10000)
-      Error("bad ZZXFac_InitNumPrimes");
+      LogicError("bad ZZXFac_InitNumPrimes");
 
    if (ZZXFac_MaxNumPrimes < ZZXFac_InitNumPrimes || ZZXFac_MaxNumPrimes > 10000)
-      Error("bad ZZXFac_MaxNumPrimes");
+      LogicError("bad ZZXFac_MaxNumPrimes");
 
    LocalInfo.p.SetLength(ZZXFac_InitNumPrimes);
    LocalInfo.pattern.SetLength(ZZXFac_InitNumPrimes);
@@ -594,9 +593,9 @@ SmallPrimeFactorization(LocalInfoT& LocalInfo, const ZZX& f,
    long minr = n+1;
    long irred = 0;
 
-   vec_pair_zz_pX_long *bestfac = 0;
-   zz_pX *besth = 0;
-   vec_zz_pX *spfactors = 0;
+   UniquePtr<vec_pair_zz_pX_long> bestfac;
+   UniquePtr<zz_pX> besth;
+   UniquePtr<vec_zz_pX> spfactors;
    zz_pContext bestp;
    long bestp_index;
 
@@ -604,7 +603,7 @@ SmallPrimeFactorization(LocalInfoT& LocalInfo, const ZZX& f,
 
    for (; NumPrimes < ZZXFac_InitNumPrimes;) {
       long p = LocalInfo.s.next();
-      if (!p) Error("out of small primes");
+      if (!p) ResourceError("out of small primes");
       if (divide(LeadCoeff(f), p)) {
          if (verbose) cerr << "skipping " << p << "\n";
          continue;
@@ -672,12 +671,8 @@ SmallPrimeFactorization(LocalInfoT& LocalInfo, const ZZX& f,
 
       if (r < minr) {
          minr = r;
-         delete bestfac;
-         bestfac = NTL_NEW_OP vec_pair_zz_pX_long;
-         *bestfac = thisfac;
-         delete besth;
-         besth = NTL_NEW_OP zz_pX;
-         *besth = thish;
+         bestfac.make(thisfac);
+         besth.make(thish);
          bestp.save();
          bestp_index = NumPrimes;
       }
@@ -686,14 +681,14 @@ SmallPrimeFactorization(LocalInfoT& LocalInfo, const ZZX& f,
    }
 
    if (!irred) {
-      // delete best prime from LocalInfo
+      // remove best prime from LocalInfo
       swap(LocalInfo.pattern[bestp_index], LocalInfo.pattern[NumPrimes-1]);
       LocalInfo.p[bestp_index] = LocalInfo.p[NumPrimes-1];
       NumPrimes--;
 
       bestp.restore();
 
-      spfactors = NTL_NEW_OP vec_zz_pX;
+      spfactors.make();
 
       if (verbose) {
          cerr << "p = " << zz_p::modulus() << ", completing factorization...";
@@ -705,10 +700,7 @@ SmallPrimeFactorization(LocalInfoT& LocalInfo, const ZZX& f,
       }
    }
 
-   delete bestfac;
-   delete besth;
-
-   return spfactors;
+   return spfactors.release();
 }
 
 
@@ -839,14 +831,14 @@ void SubPattern(vec_long& p1, const vec_long& p2)
    long l = p1.length();
 
    if (p2.length() != l)
-      Error("SubPattern: bad args");
+      LogicError("SubPattern: bad args");
 
    long i;
 
    for (i = 0; i < l; i++) {
       p1[i] -= p2[i];
       if (p1[i] < 0)
-         Error("SubPattern: internal error");
+         LogicError("SubPattern: internal error");
    }
 }
 
@@ -855,7 +847,7 @@ void UpdateLocalInfo(LocalInfoT& LocalInfo, vec_ZZ& pdeg,
                      const vec_ZZ_pX& W, const vec_ZZX& factors,
                      const ZZX& f, long k, long verbose)
 {
-   static long cnt = 0;
+   NTL_THREAD_LOCAL static long cnt = 0;
 
    if (verbose) {
       cnt = (cnt + 1) % 100;
@@ -918,7 +910,7 @@ void UpdateLocalInfo(LocalInfoT& LocalInfo, vec_ZZ& pdeg,
       for (;;) {
          long p = LocalInfo.s.next();
          if (!p)
-            Error("UpdateLocalInfo: out of primes");
+            ResourceError("UpdateLocalInfo: out of primes");
 
          if (divide(LeadCoeff(f), p)) {
             if (verbose) cerr << "skipping " << p << "\n";
@@ -1251,9 +1243,14 @@ void DoInitTab(TBL_T ***lookup_tab, long i, const vec_ulong& ratio,
 // iterative version
 
 
+
+typedef Vec< Vec< Vec< TBL_T > > > lookup_tab_t;
+typedef Vec< Vec<long> > shamt_tab_t;
+
+
 static
-void DoInitTab(TBL_T ***lookup_tab, long i, const vec_ulong& ratio,
-               long r, long k, unsigned long thresh1, long **shamt_tab)
+void DoInitTab(lookup_tab_t& lookup_tab, long i, const vec_ulong& ratio,
+               long r, long k, unsigned long thresh1, shamt_tab_t& shamt_tab)
 {
    vec_long sum_vec, card_vec, location_vec;
    sum_vec.SetLength(i+1);
@@ -1324,8 +1321,8 @@ void DoInitTab(TBL_T ***lookup_tab, long i, const vec_ulong& ratio,
    
 
 static
-void InitTab(TBL_T ***lookup_tab, const vec_ulong& ratio, long r, long k,
-             unsigned long thresh1, long **shamt_tab, long pruning)
+void InitTab(lookup_tab_t& lookup_tab, const vec_ulong& ratio, long r, long k,
+             unsigned long thresh1, shamt_tab_t& shamt_tab, long pruning)
 {
    long i, j, t;
 
@@ -1347,9 +1344,9 @@ void InitTab(TBL_T ***lookup_tab, const vec_ulong& ratio, long r, long k,
 
 static
 void RatioInit1(vec_ulong& ratio, const vec_ZZ_pX& W, const ZZ_p& lc,
-                long pruning, TBL_T ***lookup_tab, 
+                long pruning, lookup_tab_t& lookup_tab, 
                 vec_vec_ulong& pair_ratio, long k, unsigned long thresh1, 
-                long **shamt_tab)
+                shamt_tab_t& shamt_tab)
 {
    long r = W.length();
    long i, j;
@@ -1505,13 +1502,6 @@ void RemoveFactors1(vec_vec_long& W, const vec_long& I, long r)
 }
 
 
-// should this swap go in tools.h?
-// Maybe not...I don't want to pollute the interface too much more.
-
-static inline 
-void swap(unsigned long& a, unsigned long& b)  
-   { unsigned long t;  t = a; a = b; b = t; }
-
 static
 void RemoveFactors1(vec_ulong& W, const vec_long& I, long r)
 {
@@ -1523,7 +1513,7 @@ void RemoveFactors1(vec_ulong& W, const vec_long& I, long r)
       if (i < k && j == I[i])
          i++;
       else
-         swap(W[j-i], W[j]); 
+         _ntl_swap(W[j-i], W[j]); 
    }
 }
 
@@ -1621,7 +1611,7 @@ long ConstTermTest(const vec_ZZ_p& W,
 }
 
 
-long ZZXFac_MaxPrune = 10;
+NTL_THREAD_LOCAL long ZZXFac_MaxPrune = 10;
 
 
 
@@ -1682,11 +1672,11 @@ void CardinalitySearch1(vec_ZZX& factors, ZZX& f,
       cerr << "start cardinality " << k << "\n";
    }
 
-   if (k <= 1) Error("internal error: call CardinalitySearch");
+   if (k <= 1) LogicError("internal error: call CardinalitySearch");
 
    // This test is needed to ensure correcntes of "n-2" test
    if (NumBits(k) > NTL_BITS_PER_LONG/2-2)
-      Error("Cardinality Search: k too large...");
+      ResourceError("Cardinality Search: k too large...");
 
    vec_ZZ pdeg;
    CalcPossibleDegrees(pdeg, W, k);
@@ -1727,47 +1717,33 @@ void CardinalitySearch1(vec_ZZX& factors, ZZX& f,
 
    long init_pruning = pruning;
 
-   TBL_T ***lookup_tab = 0;
+   lookup_tab_t lookup_tab;
 
-   long **shamt_tab = 0;
+   shamt_tab_t shamt_tab;
 
    if (pruning) {
-      typedef long *long_p;
 
       long i, j;
 
-      shamt_tab = NTL_NEW_OP long_p[pruning+1];
-      if (!shamt_tab) Error("out of mem");
-      shamt_tab[0] = shamt_tab[1] = 0;
+      shamt_tab.SetLength(pruning+1);
 
       for (i = 2; i <= pruning; i++) {
          long len = min(k-1, i);
-         shamt_tab[i] = NTL_NEW_OP long[len+1];
-         if (!shamt_tab[i]) Error("out of mem");
+         shamt_tab[i].SetLength(len+1);
          shamt_tab[i][0] = shamt_tab[i][1] = 0;
 
          for (j = 2; j <= len; j++)
             shamt_tab[i][j] = shamt_tab_init(i, j, pruning, thresh1_len);
       }
 
-      typedef  TBL_T *TBL_T_p;
-      typedef  TBL_T **TBL_T_pp;
-
-      lookup_tab = NTL_NEW_OP TBL_T_pp[pruning+1];
-      if (!lookup_tab) Error("out of mem");
-
-      lookup_tab[0] = lookup_tab[1] = 0;
+      lookup_tab.SetLength(pruning+1);
 
       for (i = 2; i <= pruning; i++) {
          long len = min(k-1, i);
-         lookup_tab[i] = NTL_NEW_OP TBL_T_p[len+1];
-         if (!lookup_tab[i]) Error("out of mem");
-
-         lookup_tab[i][0] = lookup_tab[i][1] = 0;
+         lookup_tab[i].SetLength(len+1);
 
          for (j = 2; j <= len; j++) {
-            lookup_tab[i][j] = NTL_NEW_OP TBL_T[((1L << (NTL_BITS_PER_LONG-shamt_tab[i][j]))+TBL_MSK) >> TBL_SHAMT];
-            if (!lookup_tab[i][j]) Error("out of mem");
+            lookup_tab[i][j].SetLength(((1L << (NTL_BITS_PER_LONG-shamt_tab[i][j]))+TBL_MSK) >> TBL_SHAMT);
          }
       }
    }
@@ -2103,29 +2079,6 @@ void CardinalitySearch1(vec_ZZX& factors, ZZX& f,
 
    done:
 
-   if (lookup_tab) {
-      long i, j;
-      for (i = 2; i <= init_pruning; i++) {
-         long len = min(k-1, i);
-         for (j = 2; j <= len; j++) {
-            delete [] lookup_tab[i][j];
-         }
-
-         delete [] lookup_tab[i];
-      }
-
-      delete [] lookup_tab;
-   }
-
-   if (shamt_tab) {
-      long i;
-      for (i = 2; i <= init_pruning; i++) {
-         delete [] shamt_tab[i];
-      }
-
-      delete [] shamt_tab;
-   }
-
    if (verbose) { 
       end_time = GetTime();
       cerr << "\n************ ";
@@ -2253,7 +2206,7 @@ const long van_hoeij_card_thresh = 3;
 static 
 ZZ PolyEval(const ZZX& f, const ZZ& a)
 {
-   if (f == 0) Error("PolyEval: internal error");
+   if (f == 0) LogicError("PolyEval: internal error");
 
    long n = deg(f);
 
@@ -2279,7 +2232,7 @@ ZZ PolyEval(const ZZX& f, const ZZ& a)
 static 
 ZZ RootBound(const ZZX& f)
 {
-   if (ConstTerm(f) == 0) Error("RootBound: internal error");
+   if (ConstTerm(f) == 0) LogicError("RootBound: internal error");
 
    long n = deg(f);
 
@@ -2334,7 +2287,7 @@ void gauss(ZZ& d_out, mat_ZZ& R_out, const mat_ZZ& M)
    long n = M.NumRows();
    long m = M.NumCols();
 
-   if (n == 0 || m == 0) Error("gauss: internal error");
+   if (n == 0 || m == 0) LogicError("gauss: internal error");
 
    zz_pBak bak;
    bak.save();
@@ -2419,16 +2372,16 @@ void ComputeTrace(vec_ZZ& Tr, const ZZX& f, long d, const ZZ& P)
    // check arguments
 
    if (n <= 0 || LeadCoeff(f) != 1) 
-      Error("ComputeTrace: internal error (1)");
+      LogicError("ComputeTrace: internal error (1)");
 
    if (d <= 0)
-      Error("ComputeTrace: internal error (2)");
+      LogicError("ComputeTrace: internal error (2)");
 
    if (Tr.length() < d)
-      Error("ComputeTrace: internal error (3)");
+      LogicError("ComputeTrace: internal error (3)");
 
    if (P <= 1)
-      Error("ComputeTrace: internal error (4)");
+      LogicError("ComputeTrace: internal error (4)");
 
    // treat d > deg(f) separately
 
@@ -2477,11 +2430,11 @@ void ComputeTrace(vec_ZZ& Tr, const ZZX& f, long d, const ZZ& P)
 void ChopTraces(vec_ZZ& C, const vec_ZZ& Tr, long d,
                 const vec_ZZ& pb, const ZZ& pdelta, const ZZ& P, const ZZ& lc)
 {
-   if (d <= 0) Error("ChopTraces: internal error (1)");
-   if (C.length() < d) Error("ChopTraces: internal error (2)");
-   if (Tr.length() < d) Error("ChopTraces: internal error (3)");
-   if (pb.length() < d) Error("ChopTraces: internal error (4)");
-   if (P <= 1) Error("ChopTraces: internal error (5)");
+   if (d <= 0) LogicError("ChopTraces: internal error (1)");
+   if (C.length() < d) LogicError("ChopTraces: internal error (2)");
+   if (Tr.length() < d) LogicError("ChopTraces: internal error (3)");
+   if (pb.length() < d) LogicError("ChopTraces: internal error (4)");
+   if (P <= 1) LogicError("ChopTraces: internal error (5)");
 
    ZZ lcpow, lcred;
    lcpow = 1;
@@ -2784,7 +2737,7 @@ long GotThem(vec_ZZX& factors,
    for (i = 0; i < s-1; i++)
       for (j = 0; j < s-1-i; j++)
          if (deg_vec[j] > deg_vec[j+1]) {
-            swap(deg_vec[j], deg_vec[j+1]);
+            _ntl_swap(deg_vec[j], deg_vec[j+1]);
             swap(I_vec[j], I_vec[j+1]);
          }
 
@@ -3298,7 +3251,7 @@ void FindTrueFactors_vH(vec_ZZX& factors, const ZZX& ff,
          if (verbose) cerr << (tt1-tt0) << "\n";
    
          if (rnk != s + d1) {
-            Error("van Hoeij -- bad rank");
+            LogicError("van Hoeij -- bad rank");
          }
    
          mat_ZZ B1;
@@ -3323,7 +3276,7 @@ void FindTrueFactors_vH(vec_ZZX& factors, const ZZX& ff,
          s = B_L.NumRows();
    
          if (s == 0)
-            Error("oops! s == 0 should not happen!");
+            LogicError("oops! s == 0 should not happen!");
    
          if (s == 1) {
             if (verbose) cerr << "   irreducible!\n";
@@ -3455,8 +3408,7 @@ void ll_SFFactor(vec_ZZX& factors, const ZZX& ff,
    zz_pBak bak;
    bak.save();
 
-   vec_zz_pX *spfactors =
-       SmallPrimeFactorization(LocalInfo, f, verbose);
+   UniquePtr<vec_zz_pX> spfactors( SmallPrimeFactorization(LocalInfo, f, verbose) );
 
    if (!spfactors) {
       // f was found to be irreducible 
@@ -3564,7 +3516,7 @@ void ll_SFFactor(vec_ZZX& factors, const ZZX& ff,
    else {
       rem(t1, LeadCoeff(f), P);
       if (sign(P) < 0)
-         Error("whoops!!!");
+         LogicError("whoops!!!");
       InvMod(t1, t1, P);
       f1.rep.SetLength(n+1);
       for (i = 0; i <= n; i++) {
@@ -3589,7 +3541,7 @@ void ll_SFFactor(vec_ZZX& factors, const ZZX& ff,
 
    // We're done with zz_p...restore
 
-   delete spfactors;
+   spfactors.reset();
    bak.restore();
 
    // search for true factors
@@ -3686,7 +3638,7 @@ void deflate(ZZX& g, const ZZX& f, long m)
 static
 void MakeFacList(vec_long& v, long m)
 {
-   if (m <= 0) Error("internal error: MakeFacList");
+   if (m <= 0) LogicError("internal error: MakeFacList");
 
    v.SetLength(0);
 
@@ -3701,7 +3653,7 @@ void MakeFacList(vec_long& v, long m)
    }
 }
 
-long ZZXFac_PowerHack = 1;
+NTL_THREAD_LOCAL long ZZXFac_PowerHack = 1;
 
 void SFFactor(vec_ZZX& factors, const ZZX& ff, 
               long verbose,
@@ -3712,7 +3664,7 @@ void SFFactor(vec_ZZX& factors, const ZZX& ff,
 
 {
    if (ff == 0) 
-      Error("SFFactor: bad args");
+      LogicError("SFFactor: bad args");
 
    if (deg(ff) <= 0) {
       factors.SetLength(0);

@@ -4,18 +4,14 @@
 
 NTL_START_IMPL
 
-void BlockConstruct(GF2E* x, long n)
+static
+void BasicBlockConstruct(GF2E* x, long n, long d)
 {
-   if (n <= 0) return; 
-
-   if (!GF2EInfo)
-      Error("GF2E constructor called while modulus undefined");
-
-   long d = GF2E::WordLength();
-
    long m, j;
  
    long i = 0;
+
+   NTL_SCOPE(guard) { BlockDestroy(x, i); };
  
    while (i < n) {
       m = WV_BlockConstructAlloc(x[i]._GF2E__rep.xrep, d, n-i);
@@ -23,7 +19,57 @@ void BlockConstruct(GF2E* x, long n)
          WV_BlockConstructSet(x[i]._GF2E__rep.xrep, x[i+j]._GF2E__rep.xrep, j);
       i += m;
    }
+
+   guard.relax();
 }
+
+
+void BlockConstruct(GF2E* x, long n)
+{
+   if (n <= 0) return; 
+
+   if (!GF2EInfo)
+      LogicError("GF2E constructor called while modulus undefined");
+
+   long d = GF2E::WordLength();
+   BasicBlockConstruct(x, n, d);
+}
+
+void BlockConstructFromVec(GF2E* x, long n, const GF2E* y)
+{
+   if (n <= 0) return;
+
+   long d = y->_GF2E__rep.xrep.MaxLength();
+   BasicBlockConstruct(x, n, d);
+
+   NTL_SCOPE(guard) { BlockDestroy(x, n); };
+
+   long i;
+   for (i = 0; i < n; i++) x[i] = y[i];
+
+   guard.relax();
+}
+
+void BlockConstructFromObj(GF2E* x, long n, const GF2E& y)
+{
+   if (n <= 0) return;
+
+   if (!GF2EInfo)
+      LogicError("GF2E constructor called while modulus undefined");
+
+   long d = GF2E::WordLength();
+
+   BasicBlockConstruct(x, n, d);
+
+   NTL_SCOPE(guard) { BlockDestroy(x, n); };
+
+   long i;
+   for (i = 0; i < n; i++) x[i] = y;
+
+   guard.relax();
+}
+
+
 
 
 void BlockDestroy(GF2E* x, long n)
@@ -59,8 +105,8 @@ void InnerProduct(GF2E& x, const vec_GF2E& a, const vec_GF2E& b)
 void InnerProduct(GF2E& x, const vec_GF2E& a, const vec_GF2E& b,
                   long offset)
 {
-   if (offset < 0) Error("InnerProduct: negative offset");
-   if (NTL_OVERFLOW(offset, 1, 0)) Error("InnerProduct: offset too big");
+   if (offset < 0) LogicError("InnerProduct: negative offset");
+   if (NTL_OVERFLOW(offset, 1, 0)) ResourceError("InnerProduct: offset too big");
 
    long n = min(a.length(), b.length()+offset);
    long i;
@@ -96,7 +142,7 @@ void mul(vec_GF2E& x, const vec_GF2E& a, GF2 b)
 void add(vec_GF2E& x, const vec_GF2E& a, const vec_GF2E& b)
 {
    long n = a.length();
-   if (b.length() != n) Error("vector add: dimension mismatch");
+   if (b.length() != n) LogicError("vector add: dimension mismatch");
 
    x.SetLength(n);
    long i;
@@ -160,8 +206,8 @@ GF2E operator*(const vec_GF2E& a, const vec_GF2E& b)
 
 void VectorCopy(vec_GF2E& x, const vec_GF2E& a, long n)
 {
-   if (n < 0) Error("VectorCopy: negative length");
-   if (NTL_OVERFLOW(n, 1, 0)) Error("overflow in VectorCopy");
+   if (n < 0) LogicError("VectorCopy: negative length");
+   if (NTL_OVERFLOW(n, 1, 0)) ResourceError("overflow in VectorCopy");
 
    long m = min(n, a.length());
 

@@ -28,6 +28,9 @@ quad_float(); // = 0
 
 quad_float(const quad_float& a);  // copy constructor
 
+explicit quad_float(double a);  // promotion constructor
+
+
 quad_float& operator=(const quad_float& a);  // assignment operator
 quad_float& operator=(double a);
 

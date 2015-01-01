@@ -49,16 +49,21 @@ public:
    ZZX(); // initial value 0
 
    ZZX(const ZZX& a); // copy
+   explicit ZZX(const ZZ& a); // promotion
+   explicit ZZX(long a); // promotion
+
+   ~ZZX();
+
+   ZZX(INIT_MONO_TYPE, long i, const ZZ& c); 
+   ZZX(INIT_MONO_TYPE, long i, long c); 
+   // initial value c*X^i, invoke as ZZX(INIT_MONO, i, c)
+
+   ZZX(INIT_MONO_TYPE, long i); 
+   // initial value X^i, invoke as ZZX(INIT_MONO, i)
 
    ZZX& operator=(const ZZX& a); // assignment
    ZZX& operator=(const ZZ& a);
    ZZX& operator=(long a);
-
-   ~ZZX();
-
-   ZZX(long i, const ZZ& c); // initial value X^i*c
-   ZZX(long i, long c); 
-
 
    typedef ZZ coeff_type;
 
@@ -583,6 +588,11 @@ ZZX::ZZX(INIT_SIZE_TYPE, long n);
 static const ZZX& zero();
 // ZZX::zero() is a read-only reference to 0
 
+void ZZX::swap(ZZX& x);
 void swap(ZZX& x, ZZX& y); 
-// swap x & y (by swapping pointers)
+// swap (by swapping pointers)
 
+
+ZZX::ZZX(long i, const ZZ& c); 
+ZZX::ZZX(long i, long c); 
+// initial value c*X^i, provided for backward compatibility

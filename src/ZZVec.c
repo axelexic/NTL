@@ -7,71 +7,67 @@ NTL_START_IMPL
 
 void ZZVec::SetSize(long n, long d)
 {
-   if (n < 0 || d <= 0) Error("bad args to ZZVec::SetSize()");
+   if (n < 0 || d <= 0) LogicError("bad args to ZZVec::SetSize()");
 
    if (v)
-      Error("illegal ZZVec initialization");
+      LogicError("illegal ZZVec initialization");
 
-   len = n;
-   bsize = d;
+   if (n == 0) {
+      len = n;
+      bsize = d;
+      return;
+   }
 
-   if (n == 0) return;
+   ZZVec tmp;
+   tmp.len = 0;
+   tmp.bsize = d;
 
-   v = (ZZ*) NTL_MALLOC(n, sizeof(ZZ), 0);
-   if (!v) Error("out of memory in ZZVec::SetSize()");
+   tmp.v = (ZZ*) NTL_MALLOC(n, sizeof(ZZ), 0);
+   if (!tmp.v) MemoryError();
 
    long i = 0;
    long m;
    long j;
 
    while (i < n) {
-      m = ZZ_BlockConstructAlloc(v[i], d, n-i);
+      m = ZZ_BlockConstructAlloc(tmp.v[i], d, n-i);
       for (j = 1; j < m; j++)
-         ZZ_BlockConstructSet(v[i], v[i+j], j);
+         ZZ_BlockConstructSet(tmp.v[i], tmp.v[i+j], j);
       i += m;
+      tmp.len = i;
    }
+
+   tmp.swap(*this);
 }
 
 void ZZVec::kill()
 {
    long n = len;
-
-   len = 0; bsize = 0;
-
-   if (n == 0) return;
-
    long i = 0;
-   long m;
-
    while (i < n) {
-      m = ZZ_BlockDestroy(v[i]);
+      long m = ZZ_BlockDestroy(v[i]);
       i += m;
    }
 
-   free(v);
-   v = 0; 
+   len = 0; 
+   bsize = 0;
+   if (v) {
+      free(v);
+      v = 0; 
+   }
 }
 
 
 ZZVec& ZZVec::operator=(const ZZVec& a) 
 {
-   if (this == &a)
-      return *this;
-
-   kill();
-   SetSize(a.len, a.bsize);
-
-   long i;
-   for (i = 0; i < a.len; i++)
-      v[i] = (a.v)[i];
-
-  return *this;
+   if (this == &a) return *this;
+   ZZVec tmp(a);
+   tmp.swap(*this);
+   return *this;
 }
    
-ZZVec::ZZVec(const ZZVec& a)
+ZZVec::ZZVec(const ZZVec& a) : v(0), len(0), bsize(0)
 {
-   v = 0; len = 0; bsize = 0;
-
    SetSize(a.len, a.bsize);
 
    long i;
@@ -79,22 +75,11 @@ ZZVec::ZZVec(const ZZVec& a)
       v[i] = (a.v)[i];
 }
 
-void ZZVec::swap_impl(ZZVec& x, ZZVec& y)
+void ZZVec::swap(ZZVec& x)
 {
-   ZZ* t1;
-   long t2;
-
-   t1 = x.v;
-   x.v = y.v;
-   y.v = t1;
-
-   t2 = x.len;
-   x.len = y.len;
-   y.len = t2;
-
-   t2 = x.bsize;
-   x.bsize = y.bsize;
-   y.bsize = t2;
+   _ntl_swap(v, x.v);
+   _ntl_swap(len, x.len);
+   _ntl_swap(bsize, x.bsize);
 }
 
 NTL_END_IMPL

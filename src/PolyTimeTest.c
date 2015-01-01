@@ -39,8 +39,10 @@ void print_flag()
 {
 
 
-#ifdef NTL_TBL_REM
+#if (defined(NTL_TBL_REM))
 printf("TBL_REM ");
+#elif (defined(NTL_TBL_REM_LL))
+printf("TBL_REM_LL ");
 #else
 printf("DEFAULT ");
 #endif
@@ -53,8 +55,19 @@ printf("\n");
 
 int main()
 {
-   _ntl_gmp_hack = 0;
 
+#if (defined(NTL_TBL_REM) && defined(NTL_GMP_LIP))
+
+   if (sizeof(NTL_ULL_TYPE) != 2*sizeof(long) ||
+       NTL_ZZ_NBITS != NTL_BITS_PER_LONG ||
+       (1L << (NTL_ZZ_NBITS-NTL_SP_NBITS)) < 800)  {
+      printf("999999999999999 ");
+      print_flag();
+      return 0;
+   }
+
+
+#endif
 
    long n, k;
 

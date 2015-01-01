@@ -17,6 +17,8 @@ long e;
 
 RR() {  e = 0; }
 
+explicit RR(double a) : e(0) { *this = a; }
+
 inline RR(INIT_VAL_TYPE, const ZZ& a);
 inline RR(INIT_VAL_TYPE, int a);
 inline RR(INIT_VAL_TYPE, long a);
@@ -34,8 +36,7 @@ inline RR& operator=(double a);
 
 RR(RR& z, INIT_TRANS_TYPE) : x(z.x, INIT_TRANS), e(z.e) { } 
 
-
-
+void swap(RR& z) { x.swap(z.x); _ntl_swap(e, z.e); }
 
 
 ~RR() { }
@@ -43,11 +44,11 @@ RR(RR& z, INIT_TRANS_TYPE) : x(z.x, INIT_TRANS), e(z.e) { }
 const ZZ& mantissa() const { return x; }
 long exponent() const { return e; }
 
-static long prec;
+NTL_THREAD_LOCAL static long prec;
 static void SetPrecision(long p);
 static long precision() { return prec; }
 
-static long oprec;
+NTL_THREAD_LOCAL static long oprec;
 static void SetOutputPrecision(long p);
 static long OutputPrecision() { return oprec; }
 
@@ -60,12 +61,46 @@ RR(const RR&);
 };
 
 
+inline void swap(RR& a, RR& b) { a.swap(b); }
+
+// RAII for saving/restoring precision
+// FIXME: document. 
+
+class RRPush {
+private: 
+   long old_p;
+
+   RRPush(const RRPush&); // disable
+   void operator=(const RRPush&); // disable
+
+public:
+   RRPush() : old_p(RR::prec) { }
+   ~RRPush() { RR::prec = old_p; } 
+
+};
+
+// RAII for saving/restoring output precision
+// FIXME: document. 
+
+class RROutputPush {
+private: 
+   long old_p;
+
+   RROutputPush(const RROutputPush&); // disable
+   void operator=(const RROutputPush&); // disable
+
+public:
+   RROutputPush() : old_p(RR::oprec) { }
+   ~RROutputPush() { RR::oprec = old_p; } 
+
+};
+
+
 long IsZero(const RR& a);
 long IsOne(const RR& a);
 long sign(const RR& a);
 void clear(RR& z);
 void set(RR& z);
-void swap(RR& a, RR& b);
 
 void add(RR& z, const RR& a, const RR& b);
 
@@ -327,9 +362,9 @@ void ConvPrec(RR& z, const char *s, long p);
 inline RR ConvPrec(const char *s, long p)
    { RR z; ConvPrec(z, s, p); NTL_OPT_RETURN(RR, z); }
 
-void InputPrec(RR& z, NTL_SNS istream& s, long p);
+NTL_SNS istream& InputPrec(RR& z, NTL_SNS istream& s, long p);
 inline RR InputPrec(NTL_SNS istream& s, long p)
-   { RR z; InputPrec(z, s, p); NTL_OPT_RETURN(RR, z); }
+   { RR z; NTL_INPUT_CHECK_ERR(InputPrec(z, s, p)); NTL_OPT_RETURN(RR, z); }
 
 void MakeRRPrec(RR& z, const ZZ& a, long e, long p);
 inline RR MakeRRPrec(const ZZ& a, long e, long p)

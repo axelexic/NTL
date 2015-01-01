@@ -42,8 +42,8 @@ public:
    void SetSize(long n, long d);
    void kill();
 
-   GF2XVec() { v = 0; len = 0; bsize = 0; }
-   GF2XVec(long n, long d) { v = 0; len = 0; bsize = 0; SetSize(n, d); }
+   GF2XVec() : v(0), len(0), bsize(0) { }
+   GF2XVec(long n, long d) : v(0), len(0), bsize(0)  { SetSize(n, d); }
    ~GF2XVec() { kill(); };
 
    GF2X* elts() { return v; }
@@ -52,11 +52,10 @@ public:
    GF2X& operator[](long i) { return v[i]; }
    const GF2X& operator[](long i) const { return v[i]; }
 
-   static void swap_impl(GF2XVec& x, GF2XVec& y);
+   void swap(GF2XVec& x);
 };
 
-inline void swap(GF2XVec& x, GF2XVec& y)
-   { GF2XVec::swap_impl(x, y); }
+inline void swap(GF2XVec& x, GF2XVec& y) { x.swap(y); }
 
 NTL_CLOSE_NNS
 

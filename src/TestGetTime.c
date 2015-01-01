@@ -5,11 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#if (defined(__cplusplus) && !defined(NTL_CXX_ONLY))
-extern "C" double _ntl_GetTime();
-#else
-extern double _ntl_GetTime();
-#endif
+double _ntl_GetTime();
 
 /* Assuming the processor speed is at most 200GHz, and that
  * the clock resolution is at least 1 millisecond, the following

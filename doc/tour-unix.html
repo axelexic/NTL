@@ -4,9 +4,8 @@
 A Tour of NTL: Obtaining and Installing NTL for UNIX  </title>
 </head>
 
-<body bgcolor="#fff9e6">
 <center>
-<a href="tour-stdcxx.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
+<a href="tour-modules.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
  <a href="tour.html"><img src="arrow2.gif" alt="[Up]" align=bottom></a> 
 <a href="tour-win.html"> <img src="arrow3.gif" alt="[Next]" align=bottom></a>
 </center>
@@ -173,16 +172,16 @@ Here are the most important variables, and their default values.
 
 <p>
 <pre>
-CC=gcc               # The C compiler
+
 CXX=g++              # The C++ compiler
-CFLAGS=-O2           # C complilation flags
-CXXFLAGS=$(CFLAGS)   # C++ compilation flags (by default, same as CFLAGS)
+CXXFLAGS=-g -O2      # C++ complilation flags
 
 DEF_PREFIX=/usr/local # Default software directory
 PREFIX=$(DEF_PREFIX) # Directory in which to install NTL library components
 SHARED=off           # Generate a shared library (as well as static)
 
-NTL_STD_CXX=on       # ISO Mode switch
+NTL_THREADS=off      # compile in thread-safe mode
+NTL_EXCEPTIONS=off   # compile with exceptions enabled
 
 NTL_GMP_LIP=off      # Switch to enable the use of GMP as primary 
                      #   long integer package
@@ -193,6 +192,8 @@ NTL_GF2X_LIB=off     # Switch to enable the use of the gf2x package
                      #   for faster arithmetic over GF(2)[X]
 
 GF2X_PREFIX=$(DEF_PREFIX) # Directory in which gf2x components are installed
+
+
 </pre>
 
 <p>
@@ -211,9 +212,9 @@ the configure script.
 
 <p>
 <li>
-If your C/C++ compilers are called cc/CC, run:
+If your C++ compilers is called CC, run:
 <pre>
-   % ./configure CC=cc CXX=CC
+   % ./configure CXX=CC
 </pre>
 
 <p>
@@ -221,7 +222,7 @@ If your C/C++ compilers are called cc/CC, run:
 If you want to use, say, the options <tt>-g</tt> and <tt>-O</tt> for 
 compiling <tt>C</tt> and <tt>C++</tt>, run:
 <pre>
-   % ./configure "CFLAGS=-g -O"
+   % ./configure "CXXFLAGS=-g -O"
 </pre>
 Note the use of quotes to keep the argument in one piece.
 
@@ -258,14 +259,6 @@ run:
    % ./configure NTL_GF2X_LIB=on GF2X_PREFIX=$HOME/sw
 </pre>
 Go <a href="tour-gf2x.html">here</a> for complete details.
-
-<p>
-<li>
-If you want to use 
-<a href="tour-stdcxx.html">traditional rather than ISO mode</a>, run:
-<pre>
-   % ./configure NTL_STD_CXX=off
-</pre>
 
 <p>
 <li>
@@ -342,9 +335,9 @@ it copies the file into <tt>GetTime.c</tt>.
 
 <p>
 <li>
-The files "<tt>lip_gmp_aux_impl.h</tt>" and "<tt>../include/NTL/gmp_aux.h</tt>"
-are generated for use with GMP.
-If not using GMP, these files are still created, but they are empty.
+The file  "<tt>../include/NTL/gmp_aux.h</tt>"
+is generated for use with GMP.
+If not using GMP, this files are still created, but it is empty.
 
 
 <p>
@@ -573,7 +566,7 @@ to the compiler.
 <p> <p>
 
 <center>
-<a href="tour-stdcxx.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
+<a href="tour-modules.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
  <a href="tour.html"><img src="arrow2.gif" alt="[Up]" align=bottom></a> 
 <a href="tour-win.html"> <img src="arrow3.gif" alt="[Next]" align=bottom></a>
 </center>

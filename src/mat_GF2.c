@@ -14,7 +14,7 @@ void add(mat_GF2& X, const mat_GF2& A, const mat_GF2& B)
    long m = A.NumCols();  
   
    if (B.NumRows() != n || B.NumCols() != m)   
-      Error("matrix add: dimension mismatch");  
+      LogicError("matrix add: dimension mismatch");  
   
    X.SetDims(n, m);  
 
@@ -38,7 +38,7 @@ void mul_aux(vec_GF2& x, const mat_GF2& A, const vec_GF2& b)
    long l = A.NumCols();  
   
    if (l != b.length())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    x.SetLength(n);  
   
@@ -68,7 +68,7 @@ void mul_aux(vec_GF2& x, const vec_GF2& a, const mat_GF2& B)
    long l = B.NumCols();  
   
    if (n != a.length())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    x.SetLength(l);  
    clear(x);
@@ -115,7 +115,7 @@ void mul_aux(mat_GF2& X, const mat_GF2& A, const mat_GF2& B)
    long m = B.NumCols();  
   
    if (l != B.NumRows())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -161,7 +161,7 @@ void determinant(ref_GF2 d, const mat_GF2& M_in)
    n = M_in.NumRows();
 
    if (M_in.NumCols() != n)
-      Error("determinant: nonsquare matrix");
+      LogicError("determinant: nonsquare matrix");
 
    if (n == 0) {
       set(d);
@@ -265,7 +265,7 @@ void AddToCol(mat_GF2& x, long j, const vec_GF2& a)
    long m = x.NumCols();
 
    if (a.length() != n || j < 0 || j >= m)
-      Error("AddToCol: bad args");
+      LogicError("AddToCol: bad args");
 
    long wj = j/NTL_BITS_PER_LONG;
    long bj = j - wj*NTL_BITS_PER_LONG;
@@ -320,10 +320,10 @@ void solve(ref_GF2 d, vec_GF2& X, const mat_GF2& A, const vec_GF2& b)
 {
    long n = A.NumRows();
    if (A.NumCols() != n)
-      Error("solve: nonsquare matrix");
+      LogicError("solve: nonsquare matrix");
 
    if (b.length() != n)
-      Error("solve: dimension mismatch");
+      LogicError("solve: dimension mismatch");
 
    if (n == 0) {
       X.SetLength(0);
@@ -404,7 +404,7 @@ void inv(ref_GF2 d, mat_GF2& X, const mat_GF2& A)
 {
    long n = A.NumRows();
    if (A.NumCols() != n)
-      Error("solve: nonsquare matrix");
+      LogicError("solve: nonsquare matrix");
 
    if (n == 0) {
       X.SetDims(0, 0);
@@ -505,7 +505,7 @@ long gauss(mat_GF2& M, long w)
    long m = M.NumCols();
 
    if (w < 0 || w > m)
-      Error("gauss: bad args");
+      LogicError("gauss: bad args");
 
    long wm = (m + NTL_BITS_PER_LONG - 1)/NTL_BITS_PER_LONG;
 
@@ -703,12 +703,12 @@ void inv(mat_GF2& X, const mat_GF2& A)
 {
    GF2 d;
    inv(d, X, A);
-   if (d == 0) Error("inv: non-invertible matrix");
+   if (d == 0) ArithmeticError("inv: non-invertible matrix");
 }
 
 void power(mat_GF2& X, const mat_GF2& A, const ZZ& e)
 {
-   if (A.NumRows() != A.NumCols()) Error("power: non-square matrix");
+   if (A.NumRows() != A.NumCols()) LogicError("power: non-square matrix");
 
    if (e == 0) {
       ident(X, A.NumRows());

@@ -199,7 +199,7 @@ long CRT(ZZX& gg, ZZ& a, const ZZ_pX& G)
 
 /* Compute a = b * 2^l mod p, where p = 2^n+1. 0<=l<=n and 0<b<p are
    assumed. */
-static void LeftRotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n)
+static void LeftRotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n, ZZ& scratch)
 {
   if (l == 0) {
     if (&a != &b) {
@@ -208,14 +208,13 @@ static void LeftRotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n)
     return;
   }
 
-  /* tmp := upper l bits of b */
-  static ZZ tmp;
-  RightShift(tmp, b, n - l);
+  /* scratch := upper l bits of b */
+  RightShift(scratch, b, n - l);
   /* a := 2^l * lower n - l bits of b */
   trunc(a, b, n - l);
   LeftShift(a, a, l);
-  /* a -= tmp */
-  sub(a, a, tmp);
+  /* a -= scratch */
+  sub(a, a, scratch);
   if (sign(a) < 0) {
     add(a, a, p);
   }
@@ -223,7 +222,7 @@ static void LeftRotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n)
 
 
 /* Compute a = b * 2^l mod p, where p = 2^n+1. 0<=p<b is assumed. */
-static void Rotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n)
+static void Rotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n, ZZ& scratch)
 {
   if (IsZero(b)) {
     clear(a);
@@ -239,9 +238,9 @@ static void Rotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n)
 
   /* a = b * 2^l mod p */
   if (l < n) {
-    LeftRotate(a, b, l, p, n);
+    LeftRotate(a, b, l, p, n, scratch);
   } else {
-    LeftRotate(a, b, l - n, p, n);
+    LeftRotate(a, b, l - n, p, n, scratch);
     SubPos(a, p, a);
   }
 }
@@ -252,33 +251,34 @@ static void Rotate(ZZ& a, const ZZ& b, long l, const ZZ& p, long n)
    p = 2^n+1, w = 2^r mod p is a primitive (2^l)th root of
    unity. Returns a(1),a(w),...,a(w^{2^l-1}) mod p in bit-reverse
    order. */
-static void fft(vec_ZZ& a, long r, long l, const ZZ& p, long n)
+static void fft(ZZVec& a, long r, long l, const ZZ& p, long n)
 {
   long round;
   long off, i, j, e;
   long halfsize;
   ZZ tmp, tmp1;
+  ZZ scratch;
 
   for (round = 0; round < l; round++, r <<= 1) {
     halfsize =  1L << (l - 1 - round);
     for (i = (1L << round) - 1, off = 0; i >= 0; i--, off += halfsize) {
       for (j = 0, e = 0; j < halfsize; j++, off++, e+=r) {
-	/* One butterfly : 
-	 ( a[off], a[off+halfsize] ) *= ( 1  w^{j2^round} )
-	                                ( 1 -w^{j2^round} ) */
-	/* tmp = a[off] - a[off + halfsize] mod p */
-	sub(tmp, a[off], a[off + halfsize]);
-	if (sign(tmp) < 0) {
-	  add(tmp, tmp, p);
-	}
-	/* a[off] += a[off + halfsize] mod p */
-	add(a[off], a[off], a[off + halfsize]);
-	sub(tmp1, a[off], p);
-	if (sign(tmp1) >= 0) {
-	  a[off] = tmp1;
-	}
-	/* a[off + halfsize] = tmp * w^{j2^round} mod p */
-	Rotate(a[off + halfsize], tmp, e, p, n);
+        /* One butterfly : 
+         ( a[off], a[off+halfsize] ) *= ( 1  w^{j2^round} )
+                                        ( 1 -w^{j2^round} ) */
+        /* tmp = a[off] - a[off + halfsize] mod p */
+        sub(tmp, a[off], a[off + halfsize]);
+        if (sign(tmp) < 0) {
+          add(tmp, tmp, p);
+        }
+        /* a[off] += a[off + halfsize] mod p */
+        add(a[off], a[off], a[off + halfsize]);
+        sub(tmp1, a[off], p);
+        if (sign(tmp1) >= 0) {
+          a[off] = tmp1;
+        }
+        /* a[off + halfsize] = tmp * w^{j2^round} mod p */
+        Rotate(a[off + halfsize], tmp, e, p, n, scratch);
       }
     }
   }
@@ -286,37 +286,38 @@ static void fft(vec_ZZ& a, long r, long l, const ZZ& p, long n)
 
 /* Inverse FFT. r must be the same as in the call to FFT. Result is
    by 2^l too large. */
-static void ifft(vec_ZZ& a, long r, long l, const ZZ& p, long n)
+static void ifft(ZZVec& a, long r, long l, const ZZ& p, long n)
 {
   long round;
   long off, i, j, e;
   long halfsize;
   ZZ tmp, tmp1;
+  ZZ scratch;
 
   for (round = l - 1, r <<= l - 1; round >= 0; round--, r >>= 1) {
     halfsize = 1L << (l - 1 - round);
     for (i = (1L << round) - 1, off = 0; i >= 0; i--, off += halfsize) {
       for (j = 0, e = 0; j < halfsize; j++, off++, e+=r) {
-	/* One inverse butterfly : 
-	 ( a[off], a[off+halfsize] ) *= ( 1               1             )
-	                                ( w^{-j2^round}  -w^{-j2^round} ) */
-	/* a[off + halfsize] *= w^{-j2^round} mod p */
-	Rotate(a[off + halfsize], a[off + halfsize], -e, p, n);
-	/* tmp = a[off] - a[off + halfsize] */
-	sub(tmp, a[off], a[off + halfsize]);
+        /* One inverse butterfly : 
+         ( a[off], a[off+halfsize] ) *= ( 1               1             )
+                                        ( w^{-j2^round}  -w^{-j2^round} ) */
+        /* a[off + halfsize] *= w^{-j2^round} mod p */
+        Rotate(a[off + halfsize], a[off + halfsize], -e, p, n, scratch);
+        /* tmp = a[off] - a[off + halfsize] */
+        sub(tmp, a[off], a[off + halfsize]);
 
-	/* a[off] += a[off + halfsize] mod p */
-	add(a[off], a[off], a[off + halfsize]);
-	sub(tmp1, a[off], p);
-	if (sign(tmp1) >= 0) {
-	  a[off] = tmp1;
-	}
-	/* a[off+halfsize] = tmp mod p */
-	if (sign(tmp) < 0) {
-	  add(a[off+halfsize], tmp, p);
-	} else {
-	  a[off+halfsize] = tmp;
-	}
+        /* a[off] += a[off + halfsize] mod p */
+        add(a[off], a[off], a[off + halfsize]);
+        sub(tmp1, a[off], p);
+        if (sign(tmp1) >= 0) {
+          a[off] = tmp1;
+        }
+        /* a[off+halfsize] = tmp mod p */
+        if (sign(tmp) < 0) {
+          add(a[off+halfsize], tmp, p);
+        } else {
+          a[off+halfsize] = tmp;
+        }
       }
     }
   }
@@ -364,9 +365,9 @@ void SSMul(ZZX& c, const ZZX& a, const ZZX& b)
   add(p, p, 1);
 
   /* Make coefficients of a and b positive */
-  vec_ZZ aa, bb;
-  aa.SetLength(m2);
-  bb.SetLength(m2);
+  ZZVec aa, bb;
+  aa.SetSize(m2, p.size());
+  bb.SetSize(m2, p.size());
 
   long i;
   for (i = 0; i <= deg(a); i++) {
@@ -385,6 +386,7 @@ void SSMul(ZZX& c, const ZZX& a, const ZZX& b)
     }
   }
 
+
   /* 2m-point FFT's mod p */
   fft(aa, r, l + 1, p, mr);
   fft(bb, r, l + 1, p, mr);
@@ -398,13 +400,14 @@ void SSMul(ZZX& c, const ZZX& a, const ZZX& b)
       trunc(ai, ai, mr);
       sub(ai, ai, tmp);
       if (sign(ai) < 0) {
-	add(ai, ai, p);
+        add(ai, ai, p);
       }
     }
     aa[i] = ai;
   }
   
   ifft(aa, r, l + 1, p, mr);
+  ZZ scratch;
 
   /* Retrieve c, dividing by 2m, and subtracting p where necessary */
   c.rep.SetLength(n + 1);
@@ -413,10 +416,10 @@ void SSMul(ZZX& c, const ZZX& a, const ZZX& b)
     ZZ& ci = c.rep[i];
     if (!IsZero(ai)) {
       /* ci = -ai * 2^{mr-l-1} = ai * 2^{-l-1} = ai / 2m mod p */
-      LeftRotate(ai, ai, mr - l - 1, p, mr);
+      LeftRotate(ai, ai, mr - l - 1, p, mr, scratch);
       sub(tmp, p, ai);
       if (NumBits(tmp) >= mr) { /* ci >= (p-1)/2 */
-	negate(ci, ai); /* ci = -ai = ci - p */
+        negate(ci, ai); /* ci = -ai = ci - p */
       }
       else
         ci = tmp;
@@ -473,9 +476,8 @@ void HomMul(ZZX& x, const ZZX& a, const ZZX& b)
    bak.save();
 
    for (nprimes = 0; NumBits(prod) <= bound; nprimes++) {
-      if (nprimes >= NumFFTPrimes)
-         zz_p::FFTInit(nprimes);
-      mul(prod, prod, FFTPrime[nprimes]);
+      UseFFTPrime(nprimes);
+      mul(prod, prod, GetFFTPrime(nprimes));
    }
 
 
@@ -568,6 +570,9 @@ void mul(ZZX& c, const ZZX& a, const ZZX& b)
    long k = min(maxa, maxb);
    long s = min(deg(a), deg(b)) + 1;
 
+   // FIXME: I should have a way of setting all these crossovers
+   // automatically
+
    if (s == 1 || (k == 1 && s < 40) || (k == 2 && s < 20) || 
                  (k == 3 && s < 10)) {
 
@@ -581,7 +586,7 @@ void mul(ZZX& c, const ZZX& a, const ZZX& b)
    }
 
 
-   if (maxa + maxb >= 40 && 
+   if (maxa + maxb >= 25 && 
        SSRatio(deg(a), MaxBits(a), deg(b), MaxBits(b)) < 1.75) 
       SSMul(c, a, b);
    else
@@ -612,8 +617,8 @@ void SSSqr(ZZX& c, const ZZX& a)
   LeftShift(p, p, mr);
   add(p, p, 1);
 
-  vec_ZZ aa;
-  aa.SetLength(m2);
+  ZZVec aa;
+  aa.SetSize(m2, p.size());
 
   long i;
   for (i = 0; i <= deg(a); i++) {
@@ -637,7 +642,7 @@ void SSSqr(ZZX& c, const ZZX& a)
       trunc(ai, ai, mr);
       sub(ai, ai, tmp);
       if (sign(ai) < 0) {
-	add(ai, ai, p);
+        add(ai, ai, p);
       }
     }
     aa[i] = ai;
@@ -650,15 +655,17 @@ void SSSqr(ZZX& c, const ZZX& a)
   /* Retrieve c, dividing by 2m, and subtracting p where necessary */
   c.rep.SetLength(n + 1);
 
+  ZZ scratch;
+
   for (i = 0; i <= n; i++) {
     ai = aa[i];
     ZZ& ci = c.rep[i];
     if (!IsZero(ai)) {
       /* ci = -ai * 2^{mr-l-1} = ai * 2^{-l-1} = ai / 2m mod p */
-      LeftRotate(ai, ai, mr - l - 1, p, mr);
+      LeftRotate(ai, ai, mr - l - 1, p, mr, scratch);
       sub(tmp, p, ai);
       if (NumBits(tmp) >= mr) { /* ci >= (p-1)/2 */
-	negate(ci, ai); /* ci = -ai = ci - p */
+        negate(ci, ai); /* ci = -ai = ci - p */
       }
       else
         ci = tmp;
@@ -690,9 +697,8 @@ void HomSqr(ZZX& x, const ZZX& a)
    bak.save();
 
    for (nprimes = 0; NumBits(prod) <= bound; nprimes++) {
-      if (nprimes >= NumFFTPrimes)
-         zz_p::FFTInit(nprimes);
-      mul(prod, prod, FFTPrime[nprimes]);
+      UseFFTPrime(nprimes);
+      mul(prod, prod, GetFFTPrime(nprimes));
    }
 
 
@@ -856,7 +862,7 @@ void diff(ZZX& x, const ZZX& a)
 
 void HomPseudoDivRem(ZZX& q, ZZX& r, const ZZX& a, const ZZX& b)
 {
-   if (IsZero(b)) Error("division by zero");
+   if (IsZero(b)) ArithmeticError("division by zero");
 
    long da = deg(a);
    long db = deg(b);
@@ -985,7 +991,7 @@ void PlainPseudoDivRem(ZZX& q, ZZX& r, const ZZX& a, const ZZX& b)
    da = deg(a);
    db = deg(b);
 
-   if (db < 0) Error("ZZX: division by zero");
+   if (db < 0) ArithmeticError("ZZX: division by zero");
 
    if (da < db) {
       r = a;
@@ -1028,9 +1034,9 @@ void PlainPseudoDivRem(ZZX& q, ZZX& r, const ZZX& a, const ZZX& b)
       qp[i] = t;
 
       for (j = db-1; j >= 0; j--) {
-	 mul(s, t, bp[j]);
+         mul(s, t, bp[j]);
          if (!LCIsOne) mul(xp[i+j], xp[i+j], LC);
-	 sub(xp[i+j], xp[i+j], s);
+         sub(xp[i+j], xp[i+j], s);
       }
    }
 
@@ -1064,24 +1070,24 @@ void PlainPseudoRem(ZZX& r, const ZZX& a, const ZZX& b)
 
 void div(ZZX& q, const ZZX& a, long b)
 {
-   if (b == 0) Error("div: division by zero");
+   if (b == 0) ArithmeticError("div: division by zero");
 
-   if (!divide(q, a, b)) Error("DivRem: quotient undefined over ZZ");
+   if (!divide(q, a, b)) ArithmeticError("DivRem: quotient undefined over ZZ");
 }
 
 void div(ZZX& q, const ZZX& a, const ZZ& b)
 {
-   if (b == 0) Error("div: division by zero");
+   if (b == 0) ArithmeticError("div: division by zero");
 
-   if (!divide(q, a, b)) Error("DivRem: quotient undefined over ZZ");
+   if (!divide(q, a, b)) ArithmeticError("DivRem: quotient undefined over ZZ");
 }
 
 static
 void ConstDivRem(ZZX& q, ZZX& r, const ZZX& a, const ZZ& b)
 {
-   if (b == 0) Error("DivRem: division by zero");
+   if (b == 0) ArithmeticError("DivRem: division by zero");
 
-   if (!divide(q, a, b)) Error("DivRem: quotient undefined over ZZ");
+   if (!divide(q, a, b)) ArithmeticError("DivRem: quotient undefined over ZZ");
 
    r = 0;
 }
@@ -1089,7 +1095,7 @@ void ConstDivRem(ZZX& q, ZZX& r, const ZZX& a, const ZZ& b)
 static
 void ConstRem(ZZX& r, const ZZX& a, const ZZ& b)
 {
-   if (b == 0) Error("rem: division by zero");
+   if (b == 0) ArithmeticError("rem: division by zero");
 
    r = 0;
 }
@@ -1101,7 +1107,7 @@ void DivRem(ZZX& q, ZZX& r, const ZZX& a, const ZZX& b)
    long da = deg(a);
    long db = deg(b);
 
-   if (db < 0) Error("DivRem: division by zero");
+   if (db < 0) ArithmeticError("DivRem: division by zero");
 
    if (da < db) {
       r = a;
@@ -1127,8 +1133,8 @@ void DivRem(ZZX& q, ZZX& r, const ZZX& a, const ZZX& b)
       ZZ m;
       PseudoDivRem(q1, r1, a, b);
       power(m, LeadCoeff(b), da-db+1);
-      if (!divide(q, q1, m)) Error("DivRem: quotient not defined over ZZ");
-      if (!divide(r, r1, m)) Error("DivRem: remainder not defined over ZZ");
+      if (!divide(q, q1, m)) ArithmeticError("DivRem: quotient not defined over ZZ");
+      if (!divide(r, r1, m)) ArithmeticError("DivRem: remainder not defined over ZZ");
    }
 }
 
@@ -1137,7 +1143,7 @@ void div(ZZX& q, const ZZX& a, const ZZX& b)
    long da = deg(a);
    long db = deg(b);
 
-   if (db < 0) Error("div: division by zero");
+   if (db < 0) ArithmeticError("div: division by zero");
 
    if (da < db) {
       q = 0;
@@ -1164,7 +1170,7 @@ void div(ZZX& q, const ZZX& a, const ZZX& b)
       ZZ m;
       PseudoDiv(q1, a, b);
       power(m, LeadCoeff(b), da-db+1);
-      if (!divide(q, q1, m)) Error("div: quotient not defined over ZZ");
+      if (!divide(q, q1, m)) ArithmeticError("div: quotient not defined over ZZ");
    }
 }
 
@@ -1173,7 +1179,7 @@ void rem(ZZX& r, const ZZX& a, const ZZX& b)
    long da = deg(a);
    long db = deg(b);
 
-   if (db < 0) Error("rem: division by zero");
+   if (db < 0) ArithmeticError("rem: division by zero");
 
    if (da < db) {
       r = a;
@@ -1197,7 +1203,7 @@ void rem(ZZX& r, const ZZX& a, const ZZX& b)
       ZZ m;
       PseudoRem(r1, a, b);
       power(m, LeadCoeff(b), da-db+1);
-      if (!divide(r, r1, m)) Error("rem: remainder not defined over ZZ");
+      if (!divide(r, r1, m)) ArithmeticError("rem: remainder not defined over ZZ");
    }
 }
 
@@ -1408,8 +1414,8 @@ long PlainDivide(ZZX& qq, const ZZX& aa, const ZZX& bb)
       qp[i] = t;
 
       for (j = db-1; j >= 0; j--) {
-	 mul(s, t, bp[j]);
-	 sub(xp[i+j], xp[i+j], s);
+         mul(s, t, bp[j]);
+         sub(xp[i+j], xp[i+j], s);
       }
    }
 
@@ -1703,7 +1709,7 @@ void trunc(ZZX& x, const ZZX& a, long m)
 // x = a % X^m, output may alias input
 
 {
-   if (m < 0) Error("trunc: bad args");
+   if (m < 0) LogicError("trunc: bad args");
 
    if (&x == &a) {
       if (x.rep.length() > m) {
@@ -1747,7 +1753,7 @@ void LeftShift(ZZX& x, const ZZX& a, long n)
    }
 
    if (NTL_OVERFLOW(n, 1, 0))
-      Error("overflow in LeftShift");
+      ResourceError("overflow in LeftShift");
 
    long m = a.rep.length();
 
@@ -1770,7 +1776,7 @@ void RightShift(ZZX& x, const ZZX& a, long n)
    }
 
    if (n < 0) {
-      if (n < -NTL_MAX_LONG) Error("overflow in RightShift");
+      if (n < -NTL_MAX_LONG) ResourceError("overflow in RightShift");
       LeftShift(x, a, -n);
       return;
    }
@@ -1799,7 +1805,7 @@ void RightShift(ZZX& x, const ZZX& a, long n)
 void TraceVec(vec_ZZ& S, const ZZX& ff)
 {
    if (!IsOne(LeadCoeff(ff)))
-      Error("TraceVec: bad args");
+      LogicError("TraceVec: bad args");
 
    ZZX f;
    f = ff;
@@ -1957,7 +1963,7 @@ void MinPolyMod(ZZX& gg, const ZZX& a, const ZZX& f)
 
 {
    if (!IsOne(LeadCoeff(f)) || deg(f) < 1 || deg(a) >= deg(f))
-      Error("MinPolyMod: bad args");
+      LogicError("MinPolyMod: bad args");
 
    if (IsZero(a)) {
       SetX(gg);
@@ -2144,7 +2150,7 @@ void XGCD(ZZ& rr, ZZX& ss, ZZX& tt, const ZZX& a, const ZZX& b,
 void NormMod(ZZ& x, const ZZX& a, const ZZX& f, long deterministic)
 {
    if (!IsOne(LeadCoeff(f)) || deg(a) >= deg(f) || deg(f) <= 0)
-      Error("norm: bad args");
+      LogicError("norm: bad args");
 
    if (IsZero(a)) {
       clear(x);
@@ -2157,7 +2163,7 @@ void NormMod(ZZ& x, const ZZX& a, const ZZX& f, long deterministic)
 void TraceMod(ZZ& res, const ZZX& a, const ZZX& f)
 {
    if (!IsOne(LeadCoeff(f)) || deg(a) >= deg(f) || deg(f) <= 0)
-      Error("trace: bad args");
+      LogicError("trace: bad args");
 
    vec_ZZ S;
 
@@ -2182,7 +2188,7 @@ void discriminant(ZZ& d, const ZZX& a, long deterministic)
    diff(a1, a);
    resultant(res, a, a1, deterministic);
    if (!divide(res, res, LeadCoeff(a)))
-      Error("discriminant: inexact division");
+      LogicError("discriminant: inexact division");
 
    m = m & 3;
    if (m >= 2)
@@ -2196,7 +2202,7 @@ void MulMod(ZZX& x, const ZZX& a, const ZZX& b, const ZZX& f)
 {
    if (deg(a) >= deg(f) || deg(b) >= deg(f) || deg(f) == 0 || 
        !IsOne(LeadCoeff(f)))
-      Error("MulMod: bad args");
+      LogicError("MulMod: bad args");
 
    ZZX t;
    mul(t, a, b);
@@ -2206,7 +2212,7 @@ void MulMod(ZZX& x, const ZZX& a, const ZZX& b, const ZZX& f)
 void SqrMod(ZZX& x, const ZZX& a, const ZZX& f)
 {
    if (deg(a) >= deg(f) || deg(f) == 0 || !IsOne(LeadCoeff(f)))
-      Error("MulMod: bad args");
+      LogicError("MulMod: bad args");
 
    ZZX t;
    sqr(t, a);
@@ -2229,7 +2235,7 @@ void MulByXModAux(ZZX& h, const ZZX& a, const ZZX& f)
    m = deg(a);
 
    if (m >= n || n == 0 || !IsOne(LeadCoeff(f)))
-      Error("MulByXMod: bad args");
+      LogicError("MulByXMod: bad args");
 
    if (m < 0) {
       clear(h);
@@ -2307,7 +2313,7 @@ long CharPolyBound(const ZZX& a, const ZZX& f)
 
 {
    if (IsZero(a) || IsZero(f))
-      Error("CharPolyBound: bad args");
+      LogicError("CharPolyBound: bad args");
 
    ZZ t1, t2, t;
    EuclLength1(t1, a);
@@ -2324,7 +2330,7 @@ void SetCoeff(ZZX& x, long i, long a)
    if (a == 1) 
       SetCoeff(x, i);
    else {
-      static ZZ aa;
+      NTL_ZZRegister(aa);
       conv(aa, a);
       SetCoeff(x, i, aa);
    }
@@ -2362,7 +2368,7 @@ void reverse(ZZX& x, const ZZX& a, long hi)
 {
    if (hi < 0) { clear(x); return; }
    if (NTL_OVERFLOW(hi, 1, 0))
-      Error("overflow in reverse");
+      ResourceError("overflow in reverse");
 
    if (&x == &a) {
       ZZX tmp;
@@ -2397,14 +2403,14 @@ void NewtonInvTrunc(ZZX& c, const ZZX& a, long e)
    else if (ConstTerm(a) == -1)
       x = -1;
    else
-      Error("InvTrunc: non-invertible constant term");
+      ArithmeticError("InvTrunc: non-invertible constant term");
 
    if (e == 1) {
       conv(c, x);
       return;
    }
 
-   static vec_long E;
+   vec_long E;
    E.SetLength(0);
    append(E, e);
    while (e > 1) {
@@ -2451,7 +2457,7 @@ void NewtonInvTrunc(ZZX& c, const ZZX& a, long e)
 
 void InvTrunc(ZZX& c, const ZZX& a, long e)
 {
-   if (e < 0) Error("InvTrunc: bad args");
+   if (e < 0) LogicError("InvTrunc: bad args");
 
    if (e == 0) {
       clear(c);
@@ -2459,7 +2465,7 @@ void InvTrunc(ZZX& c, const ZZX& a, long e)
    }
 
    if (NTL_OVERFLOW(e, 1, 0))
-      Error("overflow in InvTrunc");
+      ResourceError("overflow in InvTrunc");
 
    NewtonInvTrunc(c, a, e);
 }

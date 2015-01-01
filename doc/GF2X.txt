@@ -21,6 +21,8 @@ public:
    GF2X(); // initial value 0
 
    GF2X(const GF2X& a); // copy
+   explicit GF2X(long a); // promotion
+   explicit GF2X(GF2 a); // promotion
 
    GF2X& operator=(const GF2X& a); // assignment
    GF2X& operator=(GF2 a); 
@@ -28,11 +30,18 @@ public:
 
    ~GF2X(); // destructor
 
-   GF2X(long i, GF2 c); // initialize to X^i*c
-   GF2X(long i, long c); 
+   GF2X(INIT_MONO_TYPE, long i, GF2 c); 
+   GF2X(INIT_MONO_TYPE, long i, long c); 
+   // initialize to c*X^i, invoke as GF2X(INIT_MONO, i, c)
 
+   GF2X(INIT_MONO_TYPE, long i); 
+   // initialize to c*X^i, invoke as GF2X(INIT_MONO, i)
 
+   // typedefs to aid in generic programming
    typedef GF2 coeff_type;
+   typedef GF2E residue_type;
+   typedef GF2XModulus modulus_type;
+
 
    // ...
 
@@ -795,7 +804,12 @@ GF2X::GF2X(INIT_SIZE_TYPE, long n);
 static const GF2X& zero();
 // GF2X::zero() is a read-only reference to 0
 
+void GF2X::swap(GF2X& x);
 void swap(GF2X& x, GF2X& y); 
-// swap x and y (via "pointer swapping")
+// swap (via "pointer swapping" -- if possible)
+
+GF2X::GF2X(long i, GF2 c); 
+GF2X::GF2X(long i, long c); 
+// initialize to c*X^i, provided for backward compatibility
 
 // SIZE INVARIANT: for any f in GF2X, deg(f)+1 < 2^(NTL_BITS_PER_LONG-4).

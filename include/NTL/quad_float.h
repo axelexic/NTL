@@ -61,19 +61,27 @@ public:
   // Constructors
   quad_float() : hi(0), lo(0)  {}
 
+  explicit quad_float(double a) : hi(0), lo(0) { *this = a; }
+
+
   inline quad_float& operator=(double x);
 
-  static long oprec;
+  NTL_THREAD_LOCAL static long oprec;
+
   static void SetOutputPrecision(long p);
   static long OutputPrecision() { return oprec; }
 
   quad_float(double x, double y) : hi(x), lo(y) { } // internal use only
+  // FIXME: add a special argument to this to make it more "internal"
 
   ~quad_float() {}
 
 };  // end class quad_float
 
 #if (NTL_BITS_PER_LONG < NTL_DOUBLE_PRECISION)
+
+// FIXME: we could make this <=, and even BPL <= DP+1 for 
+// conversions from signed long...but this is mainly academic
 
 inline quad_float to_quad_float(long n) { return quad_float(n, 0); }
 inline quad_float to_quad_float(unsigned long n) { return quad_float(n, 0); }

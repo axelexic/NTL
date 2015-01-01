@@ -51,9 +51,6 @@ printf("DEFAULT\n");
 
 int main()
 {
-   _ntl_gmp_hack = 0;
-
-   
 
 #ifdef NTL_LONG_LONG
 
@@ -104,7 +101,7 @@ int main()
       }
    }
 
-   k = 16*NTL_ZZ_NBITS;
+   k = 1024;
 
    ZZ x1, x2, x3;
    double t;

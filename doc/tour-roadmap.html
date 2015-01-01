@@ -4,7 +4,6 @@
 A Tour of NTL: NTL past, present, and future  </title>
 </head>
 
-<body bgcolor="#fff9e6">
 <center>
 <a href="tour-time.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
  <a href="tour.html"><img src="arrow2.gif" alt="[Up]" align=bottom></a> 
@@ -48,8 +47,7 @@ kept changing whenever I changed jobs.
 Achieving portability is getting easier as standards,
 like IEEE floating point, get widely adopted, and as the definition of
 and implementations of the
-<tt>C++</tt> language stabilize (which a few years ago was a huge headache,
-but is now only a big one, and in a few years will be a small one).
+<tt>C++</tt> language stabilize.
 
 
 <p>
@@ -68,15 +66,7 @@ many platforms, and is typically much faster than LIP.
 
 <p>
 I've now re-structured NTL so that one can use
-either 'traditional' LIP or GMP as the <i>primary</i> long integer package.
-Doing this introduced some (minor) backward incompatabilies in 
-the programming interface, so there is also a 'third way' -- you
-can use GMP as a <i>supplemental</i> long integer package, getting
-many (but not all) of the performance benefits of GMP, while
-maintaining <i>complete</i> backward compatability with the traditional
-long integer package.
-This 'third way' is not highly recommended -- it is only intended
-as backward compatabilty hack.
+either 'traditional' LIP or GMP as the long integer package.
 
 <p>
 
@@ -86,34 +76,122 @@ The Future of NTL
 
 <p>
 
-I hope that NTL remains stable in its current form.
-I plan to support NTL, fixing bugs and serious performance
-problems, but otherwise not to add significant new functionality or
-modify the programming interface.
 
-<p>
-I don't have time to add significant new functionality to NTL.
-However, there seems to be an ever-growing number of NTL users
-out there, and I encourage them to make their code available to
-others.
-These might be in the form of NTL "add ons", but there is the
-possibility of integrating new functionality or algorithmic improvements into NTL itself.
-One thing in particular  that would be nice is support for
-bivariate polynomial arithmetic, including GCDs, resultants,
-and factoring, and for integer and all the various finite field
-coefficient rings.
-Another nice thing would be code for elliptic curves,
-including an elliptic curve point counting algorithm.
-Another nice thing would be something for factoring integers.
-Any one of these projects would be a nice master's thesis project,
-I think.
-
-<p>
 As you can well imagine, there is potentially no end to algorithms one
 could implement.
 That is why I have to stop somewhere.
 I think NTL has reached a point where it provides a reasonably
 well-rounded suite of algorithms for basic problems.
+I plan to continue supporting NTL, fixing bugs and improving performance.
+
+<p>
+While I don't have time to add significant new functionality to NTL,
+there seems to be an ever-growing number of NTL users
+out there, and I encourage them to make their code available to
+others.
+These might be in the form of NTL "add ons", but there is the
+possibility of integrating 
+new functionality or algorithmic improvements into NTL itself.
+
+
+<h3>Wish list</h3>
+These are a few things I wish others could perhaps contribute to 
+NTL.
+I'd be happy to discuss and assist with any design and integration issues,
+or any other ideas for improvement.
+I'd also be happy to discuss ideas for making NTL more
+open to make it easier for others to contribute.
+
+<ul>
+<p> <li>
+Support for
+bivariate polynomial arithmetic, including GCDs, resultants,
+and factoring, and for integer and all the various finite field
+coefficient rings.
+
+<p><li>
+Code for elliptic curves,
+including an elliptic curve point counting algorithm.
+
+<p><li>
+Integer factorization algorithms.
+
+<p><li>
+Implementations of some of the newer lattice basis reduction algorithms.
+
+<p><li>
+Improvements to the
+polynomial multiplication algorithms over <tt>ZZ</tt>
+could be improved.
+One specific improvement: the Schoenhage-Strassen algorithm
+currently does not incorporate the so-called "square root of two trick".
+
+<p><li>
+Improvements to some of the <tt>RR</tt> algorithms.
+In particular, the trig, exp, and log functions are currently woefully
+inefficient.
+
+</ul>
+
+<h3>Some things I plan to work on</h3>
+
+Here are a few things I plan to work on in the near future.
+
+<ul>
+<p><li>
+Now that NTL is thread safe, it is possible to use multiple cores
+within NTL to improve performance.
+One possibilty is to utilize multiple cores in the modular
+FFT implementation of polynomial multiplication.
+Both the FFT (over different small primes) and reduce/CRT
+(over different coefficients) steps are trivially parallelizable.
+
+<p><li>
+Introducing specialized types for single-precision computation.
+NTL relies on fast modular arithmetic of single precision values.
+Right now the type <tt>long</tt> is used to store these
+values, and the type <tt>double</tt> is used to store
+floating point approximations to auxilliary values (e.g., inverses).
+I'd like to introduce a level of "type indirection" here.
+This would allow two new implementations:
+<ul>
+<li>
+On LP64 platforms that support extended FP, 
+one could use <tt>long double</tt> in place of <tt>double</tt>,
+which would allow 60-bit, rather than 50-bit, single precision values.
+This could be more convenient and a little faster:
+speed-wise, a few things could get slower, but I expect a net gain.
+<li>
+On LP64 platforms, use 30-bit single precision values and use
+<tt>int</tt> instead of <tt>long</tt>.
+This would open up the possibility of using vectorized instructions
+and/or GPUs.
+Both of these specialized hardware features typically do not support
+64-bit integers arithmetic.
+Again, some things could get slower, while other things faster,
+and I would expect a net gain.
+</ul>
+In any case, it could not hurt to use type names that indicate
+the role that these values play,
+and it would open up a number of possibilities for 
+experimenting with other implementations.
+All of these changes can be done in a perfectly backward compatible way.
+
+
+<p><li>
+Work towards exception-safety: this means slowly going over all
+of the code in NTL, modernizing some of the internals, making
+use of RAII and scope guards.
+This won't happen quickly, and it won't really happen at all unless
+something is also done about GMP's similarly draconian error handling.
+
+<p><li>
+Introduce some <tt>C++11</tt> features, like "move constructors"
+and "move assignment".
+This would have to be done with compile-time flags to support
+older compilers.
+
+</ul>
 
 
 <p>

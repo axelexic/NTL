@@ -16,7 +16,7 @@ void add(mat_zz_p& X, const mat_zz_p& A, const mat_zz_p& B)
    long m = A.NumCols();  
   
    if (B.NumRows() != n || B.NumCols() != m)   
-      Error("matrix add: dimension mismatch");  
+      LogicError("matrix add: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -32,7 +32,7 @@ void sub(mat_zz_p& X, const mat_zz_p& A, const mat_zz_p& B)
    long m = A.NumCols();  
   
    if (B.NumRows() != n || B.NumCols() != m)  
-      Error("matrix sub: dimension mismatch");  
+      LogicError("matrix sub: dimension mismatch");  
   
    X.SetDims(n, m);  
   
@@ -43,10 +43,10 @@ void sub(mat_zz_p& X, const mat_zz_p& A, const mat_zz_p& B)
 }  
   
 
+// some local buffers
 
-static vec_long mul_aux_vec;
-
-static NTL_SPMM_VEC_T precon_vec;
+NTL_THREAD_LOCAL static vec_long mul_aux_vec;
+NTL_THREAD_LOCAL static NTL_SPMM_VEC_T precon_vec;
 
 
 
@@ -58,7 +58,7 @@ void mul_aux(mat_zz_p& X, const mat_zz_p& A, const mat_zz_p& B)
    long m = B.NumCols();  
   
    if (l != B.NumRows())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
   
    X.SetDims(n, m); 
 
@@ -67,6 +67,8 @@ void mul_aux(mat_zz_p& X, const mat_zz_p& A, const mat_zz_p& B)
       long p = zz_p::modulus();
       double pinv = zz_p::ModulusInverse();
 
+      
+      vec_long::Watcher watch_mul_aux_vec(mul_aux_vec);
       mul_aux_vec.SetLength(m);
       long *acc = mul_aux_vec.elts();
 
@@ -95,7 +97,6 @@ void mul_aux(mat_zz_p& X, const mat_zz_p& A, const mat_zz_p& B)
          for (j = 0; j < m; j++)
             xp[j].LoopHole() = acc[j];    
       }
-
    }
    else {  // just use the old code, w/o preconditioning
 
@@ -137,7 +138,7 @@ void mul(vec_zz_p& x, const vec_zz_p& a, const mat_zz_p& B)
    long m = B.NumCols();
   
    if (l != B.NumRows())  
-      Error("matrix mul: dimension mismatch");  
+      LogicError("matrix mul: dimension mismatch");  
 
    if (m == 0) { 
 
@@ -168,6 +169,7 @@ void mul(vec_zz_p& x, const vec_zz_p& a, const mat_zz_p& B)
       long p = zz_p::modulus();
       double pinv = zz_p::ModulusInverse();
 
+      vec_long::Watcher watch_mul_aux_vec(mul_aux_vec);
       mul_aux_vec.SetLength(m);
       long *acc = mul_aux_vec.elts();
 
@@ -196,7 +198,6 @@ void mul(vec_zz_p& x, const vec_zz_p& a, const mat_zz_p& B)
       zz_p *xp = x.elts();
       for (j = 0; j < m; j++)
          xp[j].LoopHole() = acc[j];    
-      
    }
 }
 
@@ -207,7 +208,7 @@ void mul_aux(vec_zz_p& x, const mat_zz_p& A, const vec_zz_p& b)
    long l = A.NumCols();
 
    if (l != b.length())
-      Error("matrix mul: dimension mismatch");
+      LogicError("matrix mul: dimension mismatch");
 
    x.SetLength(n);
    zz_p* xp = x.elts();
@@ -237,6 +238,7 @@ void mul_aux(vec_zz_p& x, const mat_zz_p& A, const vec_zz_p& b)
    }
    else {
 
+      NTL_SPMM_VEC_T::Watcher watch_precon_vec(precon_vec);
       precon_vec.SetLength(l);
       mulmod_precon_t *bpinv = precon_vec.elts();
 
@@ -254,7 +256,6 @@ void mul_aux(vec_zz_p& x, const mat_zz_p& A, const vec_zz_p& b)
 
 	 xp[i].LoopHole() = acc;
       } 
-   
    }
 }
   
@@ -346,7 +347,7 @@ void determinant(zz_p& d, const mat_zz_p& M_in)
    n = M.NumRows();
 
    if (M.NumCols() != n)
-      Error("determinant: nonsquare matrix");
+      LogicError("determinant: nonsquare matrix");
 
    if (n == 0) {
       set(d);
@@ -470,11 +471,11 @@ void solve(zz_p& d, vec_zz_p& X,
    long n = A.NumRows();
 
    if (A.NumCols() != n)
-      Error("solve: nonsquare matrix");
+      LogicError("solve: nonsquare matrix");
 
 
    if (b.length() != n)
-      Error("solve: dimension mismatch");
+      LogicError("solve: dimension mismatch");
 
    if (n == 0) {
       set(d);
@@ -566,7 +567,7 @@ void inv(zz_p& d, mat_zz_p& X, const mat_zz_p& A)
 {
    long n = A.NumRows();
    if (A.NumCols() != n)
-      Error("inv: nonsquare matrix");
+      LogicError("inv: nonsquare matrix");
 
    if (n == 0) {
       set(d);
@@ -669,7 +670,7 @@ long gauss(mat_zz_p& M, long w)
    long m = M.NumCols();
 
    if (w < 0 || w > m)
-      Error("gauss: bad args");
+      LogicError("gauss: bad args");
 
    long p = zz_p::modulus();
    double pinv = zz_p::ModulusInverse();
@@ -915,12 +916,12 @@ void inv(mat_zz_p& X, const mat_zz_p& A)
 {
    zz_p d;
    inv(d, X, A);
-   if (d == 0) Error("inv: non-invertible matrix");
+   if (d == 0) ArithmeticError("inv: non-invertible matrix");
 }
 
 void power(mat_zz_p& X, const mat_zz_p& A, const ZZ& e)
 {
-   if (A.NumRows() != A.NumCols()) Error("power: non-square matrix");
+   if (A.NumRows() != A.NumCols()) LogicError("power: non-square matrix");
 
    if (e == 0) {
       ident(X, A.NumRows());

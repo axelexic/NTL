@@ -62,7 +62,7 @@ int main()
    v[1] = 1;
    v[0] = v[1];
 
-   if (v[0] != v[1]) Error("BitMatTest not OK!!");
+   if (v[0] != v[1]) TerminalError("BitMatTest not OK!!");
 
    for (i=0; i < 8; i++) {
       mat_zz_p a, x;
@@ -90,9 +90,9 @@ int main()
 
       cvt(X1, x);
 
-      if (X1 != X) Error("BitMatTest NOT OK!!");
+      if (X1 != X) TerminalError("BitMatTest NOT OK!!");
 
-      if (!IsZero(X*A)) Error("BitMatTest NOT OK!!");
+      if (!IsZero(X*A)) TerminalError("BitMatTest NOT OK!!");
 
       cerr << "\n";
    }

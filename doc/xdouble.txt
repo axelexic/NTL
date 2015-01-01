@@ -27,6 +27,8 @@ xdouble(); // = 0
 
 xdouble(const xdouble& a);  // copy constructor
 
+explicit xdouble(double a);  // promotion constructor
+
 xdouble& operator=(const xdouble& a);  // assignment operator
 xdouble& operator=(double a);
 

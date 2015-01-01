@@ -1,4 +1,5 @@
 
+#include <NTL/ZZX.h>
 #include <NTL/ZZ_pX.h>
 #include <NTL/lzz_pX.h>
 #include <NTL/GF2X.h>
@@ -100,6 +101,14 @@ void GF2X_time()
 }
 
 
+ZZX SSMul(const ZZX& a, const ZZX& b)
+{
+   ZZX res;
+   SSMul(res, a, b);
+   return res;
+}
+
+
 int main()
 {
 
@@ -109,29 +118,31 @@ int main()
    cerr << "Basic Configuration Options:\n";
 
 
-#ifdef NTL_STD_CXX
-   cerr << "NTL_STD_CXX\n";
+
+#ifdef NTL_LEGACY_NO_NAMESPACE
+   cerr << "NTL_LEGACY_NO_NAMESPACE\n";
 #endif
 
-#ifdef NTL_PSTD_NNS
-   cerr << "NTL_PSTD_NNS\n";
+
+#ifdef NTL_LEGACY_INPUT_ERROR
+   cerr << "NTL_LEGACY_INPUT_ERROR\n";
 #endif
 
-#ifdef NTL_PSTD_NHF
-   cerr << "NTL_PSTD_NHF\n";
+
+#ifdef NTL_THREADS
+   cerr << "NTL_THREADS\n";
 #endif
 
-#ifdef NTL_PSTD_NTN
-   cerr << "NTL_PSTD_NTN\n";
+
+#ifdef NTL_EXCEPTIONS
+   cerr << "NTL_EXCEPTIONS\n";
 #endif
+
 
 #ifdef NTL_GMP_LIP
    cerr << "NTL_GMP_LIP\n";
 #endif
 
-#ifdef NTL_GMP_HACK
-   cerr << "NTL_GMP_HACK\n";
-#endif
 
 #ifdef NTL_GF2X_LIB
    cerr << "NTL_GF2X_LIB\n";
@@ -146,10 +157,6 @@ int main()
 #ifdef NTL_UNSIGNED_LONG_LONG_TYPE
    cerr << "NTL_UNSIGNED_LONG_LONG_TYPE: ";
    cerr << make_string(NTL_UNSIGNED_LONG_LONG_TYPE) << "\n";
-#endif
-
-#ifdef NTL_CXX_ONLY
-   cerr << "NTL_CXX_ONLY\n";
 #endif
 
 
@@ -234,6 +241,11 @@ cerr << "Performance Options:\n";
 #endif
 
 
+#ifdef NTL_TBL_REM_LL
+   cerr << "NTL_TBL_REM_LL\n";
+#endif
+
+
 #ifdef NTL_GF2X_ALTCODE
    cerr << "NTL_GF2X_ALTCODE\n";
 #endif
@@ -249,62 +261,39 @@ cerr << "Performance Options:\n";
 
    cerr << "\n\n";
 
-   if (_ntl_gmp_hack)
-      cerr << "using GMP hack\n\n";
+   cerr << "running tests";
 
-   cerr << "running tests...";
+   long n, k, i;
 
-   long n, k;
-
-   n = 200;
-   k = 10*NTL_ZZ_NBITS;
+   n = 250;
+   k = 16000;
 
    ZZ p;
 
-   GenPrime(p, k);
+
+   for (i = 0; i < 14; i++) {
+      // cerr << n << "/" << k; 
+      cerr << ".";
+      RandomLen(p, k);
+      ZZ_p::init(p);  
+
+      ZZ_pX a, b, c, c1;
 
 
-   ZZ_p::init(p);         // initialization
+      random(a, n);
+      random(b, n);
 
-   ZZ_pX f, g, h, r1, r2, r3;
+      FFTMul(c, a, b);
 
-   random(g, n);    // g = random polynomial of degree < n
-   random(h, n);    // h =             "   "
-   random(f, n);    // f =             "   "
+      c1 = conv<ZZ_pX>( SSMul( conv<ZZX>(a), conv<ZZX>(b) ) );
 
-   // SetCoeff(f, n);  // Sets coefficient of X^n to 1
-   
-   ZZ_p lc;
+      if (c1 != c) {
+         cerr << "ZZ_pX mul failed!\n";
+         return 1;
+      }
 
-   do {
-      random(lc);
-   } while (IsZero(lc));
-
-   SetCoeff(f, n, lc);
-
-
-   // For doing arithmetic mod f quickly, one must pre-compute
-   // some information.
-
-   ZZ_pXModulus F;
-   build(F, f);
-
-   PlainMul(r1, g, h);  // this uses classical arithmetic
-   PlainRem(r1, r1, f);
-
-   MulMod(r2, g, h, F);  // this uses the FFT
-
-   MulMod(r3, g, h, f);  // uses FFT, but slower
-
-   // compare the results...
-
-   if (r1 != r2) {
-      cerr << "r1 != r2!!\n";
-      return 1;
-   }
-   else if (r1 != r3) {
-      cerr << "r1 != r3!!\n";
-      return 1;
+      n = long(n * 1.35);
+      k = long(k / 1.414);
    }
 
 
@@ -334,7 +323,6 @@ cerr << "Performance Options:\n";
 
    ZZ x1, x2, x3, x4;
    double t;
-   long i;
 
    RandomLen(x1, 1024);
    RandomBnd(x2, x1);
@@ -348,21 +336,6 @@ cerr << "Performance Options:\n";
    t = GetTime()-t;
 
    cerr << "time for 1024-bit mul: " << t*10 << "us";
-
-   if (_ntl_gmp_hack) {
-      _ntl_gmp_hack = 0;
-      mul(x4, x2, x3);
-
-      t = GetTime();
-      for (i = 0; i < 100000; i++)
-         mul(x4, x2, x3);
-      t = GetTime()-t;
-
-      cerr << " (" << (t*10) << "us without GMP)"; 
-
-      _ntl_gmp_hack = 1;
-   }
-
    cerr << "\n";
 
    rem(x2, x4, x1);
@@ -373,20 +346,6 @@ cerr << "Performance Options:\n";
    t = GetTime()-t;
 
    cerr << "time for 2048/1024-bit rem: " << t*10 << "us";
-
-   if (_ntl_gmp_hack) {
-      _ntl_gmp_hack = 0;
-      rem(x2, x4, x1);
-   
-      t = GetTime();
-      for (i = 0; i < 100000; i++)
-         rem(x2, x4, x1);
-      t = GetTime()-t;
-      cerr << " (" << (t*10) << "us without GMP)"; 
-
-      _ntl_gmp_hack = 1;
-   }
-
    cerr << "\n";
    
 
@@ -402,20 +361,6 @@ cerr << "Performance Options:\n";
    t = GetTime()-t;
 
    cerr << "time for 1024-bit modular inverse: " << t*1000 << "us";
-
-   if (_ntl_gmp_hack) {
-      _ntl_gmp_hack = 0;
-      InvMod(x2, x1, p);
-   
-      t = GetTime();
-      for (i = 0; i < 1000; i++)
-         InvMod(x2, x1, p);
-      t = GetTime()-t;
-         cerr << " (" << (t*1000) << "us without GMP)"; 
-
-      _ntl_gmp_hack = 1;
-   }
-
    cerr << "\n";
 
 
@@ -427,34 +372,20 @@ cerr << "Performance Options:\n";
    RandomLen(p, k);
 
    ZZ_p::init(p);
-   ZZ_pInfo->check();
 
    ZZ_pX j1, j2, j3;
 
    random(j1, n);
    random(j2, n);
 
+   mul(j3, j1, j2);
+
    t = GetTime();
-   for (i = 0; i < 20; i++) mul(j3, j1, j2);
+   for (i = 0; i < 100; i++) mul(j3, j1, j2);
    t = GetTime()-t;
 
    cerr << "time to multiply degree 1023 polynomials\n   modulo a 1024-bit number: ";
-   cerr << (t/20) << "s";
-
-   if (_ntl_gmp_hack) {
-      _ntl_gmp_hack = 0;
-
-      ZZ_p::init(p);
-      ZZ_pInfo->check();
-
-      t = GetTime();
-      for (i = 0; i < 20; i++) mul(j3, j1, j2);
-      t = GetTime()-t;
-
-      cerr << " (" << (t/20) << "s without GMP)";
-      _ntl_gmp_hack = 1;
-   }
-
+   cerr << (t/100) << "s";
    cerr << "\n";
 
    GF2X_time();

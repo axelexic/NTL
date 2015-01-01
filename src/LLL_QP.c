@@ -10,14 +10,14 @@ NTL_START_IMPL
 static inline
 void CheckFinite(double *p)
 {
-   if (!IsFinite(p)) Error("LLL_QP: numbers too big...use LLL_XD");
+   if (!IsFinite(p)) ResourceError("LLL_QP: numbers too big...use LLL_XD");
 }
 
 
 static inline
 void CheckFinite(quad_float *p)
 {
-   if (!IsFinite(p)) Error("LLL_QP: numbers too big...use LLL_XD");
+   if (!IsFinite(p)) ResourceError("LLL_QP: numbers too big...use LLL_XD");
 }
 
 
@@ -37,7 +37,8 @@ static quad_float InnerProduct(quad_float *a, quad_float *b, long n)
 static void RowTransform(vec_ZZ& A, vec_ZZ& B, const ZZ& MU1)
 // x = x - y*MU
 {
-   static ZZ T, MU;
+   NTL_ZZRegister(T);
+   NTL_ZZRegister(MU);
    long k;
 
    long n = A.length();
@@ -159,7 +160,8 @@ static void RowTransform(vec_ZZ& A, vec_ZZ& B, const ZZ& MU1,
                          double& max_a, double max_b, long& in_float)
 // x = x - y*MU
 {
-   static ZZ T, MU;
+   NTL_ZZRegister(T);
+   NTL_ZZRegister(MU);
    long k;
    double mu;
 
@@ -309,7 +311,8 @@ static void RowTransform(vec_ZZ& A, vec_ZZ& B, const ZZ& MU1,
 static void RowTransform2(vec_ZZ& A, vec_ZZ& B, const ZZ& MU1)
 // x = x + y*MU
 {
-   static ZZ T, MU;
+   NTL_ZZRegister(T);
+   NTL_ZZRegister(MU);
    long k;
 
    long n = A.length();
@@ -427,14 +430,12 @@ void ComputeGS(mat_ZZ& B, quad_float **B1, quad_float **mu, quad_float *b,
    c[k] = b[k] - s;
 }
 
-static quad_float red_fudge = to_quad_float(0);
-static long log_red = 0;
-
-static long verbose = 0;
-
-static unsigned long NumSwaps = 0;
-static double StartTime = 0;
-static double LastTime = 0;
+NTL_THREAD_LOCAL static quad_float red_fudge = to_quad_float(0);
+NTL_THREAD_LOCAL static long log_red = 0;
+NTL_THREAD_LOCAL static long verbose = 0;
+NTL_THREAD_LOCAL static unsigned long NumSwaps = 0;
+NTL_THREAD_LOCAL static double StartTime = 0;
+NTL_THREAD_LOCAL static double LastTime = 0;
 
 
 static void LLLStatus(long max_k, double t, long m, const mat_ZZ& B)
@@ -504,7 +505,7 @@ static void inc_red_fudge()
    cerr << "LLL_QP: warning--relaxing reduction (" << log_red << ")\n";
 
    if (log_red < 4)
-      Error("LLL_QP: too much loss of precision...stop!");
+      ResourceError("LLL_QP: too much loss of precision...stop!");
 }
 
 
@@ -526,7 +527,7 @@ long ll_LLL_QP(mat_ZZ& B, mat_ZZ* U, quad_float delta, long deep,
    quad_float *tp;
 
 
-   static double bound = 0;
+   NTL_THREAD_LOCAL static double bound = 0;
 
 
    if (bound == 0) {
@@ -556,17 +557,17 @@ long ll_LLL_QP(mat_ZZ& B, mat_ZZ* U, quad_float delta, long deep,
    for (i = k; i <= m+1; i++)
       st[i] = 1;
 
-   quad_float *buf;
-   buf = NTL_NEW_OP quad_float [m+1];
-   if (!buf) Error("out of memory in lll_LLL_QP");
+   UniqueArray<quad_float> buf_store;
+   buf_store.SetLength(m+1);
+   quad_float *buf = buf_store.get();
 
    vec_long in_vec_mem;
    in_vec_mem.SetLength(n+1);
    long *in_vec = in_vec_mem.elts();
 
-   double *max_b;
-   max_b = NTL_NEW_OP double [m+1];
-   if (!max_b) Error("out of memory in lll_LLL_QP");
+   UniqueArray<double> max_b_store;
+   max_b_store.SetLength(m+1);
+   double *max_b = max_b_store.get();
 
    for (i = 1; i <= m; i++)
       max_b[i] = max_abs(B1[i], n);
@@ -778,10 +779,6 @@ long ll_LLL_QP(mat_ZZ& B, mat_ZZ* U, quad_float delta, long deep,
       LLLStatus(m+1, GetTime(), m, B);
    }
 
-
-   delete [] buf;
-   delete [] max_b;
-
    return m;
 }
 
@@ -805,38 +802,22 @@ long LLL_QP(mat_ZZ& B, mat_ZZ* U, quad_float delta, long deep,
 
    if (U) ident(*U, m);
 
-   quad_float **B1;  // approximates B
-
-   typedef quad_float *quad_floatptr;
-
-   B1 = NTL_NEW_OP quad_floatptr[m+1];
-   if (!B1) Error("LLL_QP: out of memory");
-
-   for (i = 1; i <= m; i++) {
-      B1[i] = NTL_NEW_OP quad_float[n+1];
-      if (!B1[i]) Error("LLL_QP: out of memory");
-   }
-
-   quad_float **mu;
-   mu = NTL_NEW_OP quad_floatptr[m+1];
-   if (!mu) Error("LLL_QP: out of memory");
-
-   for (i = 1; i <= m; i++) {
-      mu[i] = NTL_NEW_OP quad_float[m+1];
-      if (!mu[i]) Error("LLL_QP: out of memory");
-   }
-
-   quad_float *c; // squared lengths of Gramm-Schmidt basis vectors
-
-   c = NTL_NEW_OP quad_float[m+1];
-   if (!c) Error("LLL_QP: out of memory");
-
-   quad_float *b; // squared lengths of basis vectors
-
-   b = NTL_NEW_OP quad_float[m+1];
-   if (!b) Error("LLL_QP: out of memory");
+   Unique2DArray<quad_float> B1_store;
+   B1_store.SetDimsFrom1(m+1, n+1);
+   quad_float **B1 = B1_store.get();  // approximates B
 
 
+   Unique2DArray<quad_float> mu_store;
+   mu_store.SetDimsFrom1(m+1, m+1);
+   quad_float **mu = mu_store.get();
+
+   UniqueArray<quad_float> c_store;
+   c_store.SetLength(m+1);
+   quad_float *c = c_store.get(); // squared lengths of Gramm-Schmidt basis vectors
+
+   UniqueArray<quad_float> b_store;
+   b_store.SetLength(m+1);
+   quad_float *b = b_store.get(); // squared lengths of basis vectors
 
    for (i = 1; i <=m; i++)
       for (j = 1; j <= n; j++) {
@@ -865,25 +846,6 @@ long LLL_QP(mat_ZZ& B, mat_ZZ* U, quad_float delta, long deep,
       }
    }
 
-
-   // clean-up
-
-   for (i = 1; i <= m+dep; i++) {
-      delete [] B1[i];
-   }
-
-   delete [] B1;
-
-   for (i = 1; i <= m+dep; i++) {
-      delete [] mu[i];
-   }
-
-   delete [] mu;
-
-   delete [] c;
-
-   delete [] b;
-
    return m;
 }
 
@@ -899,8 +861,8 @@ long LLL_QP(mat_ZZ& B, double delta, long deep, LLLCheckFct check,
       LastTime = StartTime;
    }
 
-   if (delta < 0.50 || delta >= 1) Error("LLL_QP: bad delta");
-   if (deep < 0) Error("LLL_QP: bad deep");
+   if (delta < 0.50 || delta >= 1) LogicError("LLL_QP: bad delta");
+   if (deep < 0) LogicError("LLL_QP: bad deep");
    return LLL_QP(B, 0, to_quad_float(delta), deep, check);
 }
 
@@ -915,14 +877,14 @@ long LLL_QP(mat_ZZ& B, mat_ZZ& U, double delta, long deep,
    }
 
 
-   if (delta < 0.50 || delta >= 1) Error("LLL_QP: bad delta");
-   if (deep < 0) Error("LLL_QP: bad deep");
+   if (delta < 0.50 || delta >= 1) LogicError("LLL_QP: bad delta");
+   if (deep < 0) LogicError("LLL_QP: bad deep");
    return LLL_QP(B, &U, to_quad_float(delta), deep, check);
 }
 
 
 
-static vec_quad_float BKZConstant;
+NTL_THREAD_LOCAL static vec_quad_float BKZConstant;
 
 static
 void ComputeBKZConstant(long beta, long p)
@@ -979,7 +941,8 @@ void ComputeBKZConstant(long beta, long p)
    }
 }
 
-static vec_quad_float BKZThresh;
+
+NTL_THREAD_LOCAL static vec_quad_float BKZThresh;
 
 static 
 void ComputeBKZThresh(quad_float *c, long beta)
@@ -1077,68 +1040,55 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
 
    B.SetDims(m+1, n);
 
+   Unique2DArray<quad_float> B1_store;
+   B1_store.SetDimsFrom1(m+2, n+1);
+   quad_float **B1 = B1_store.get();  // approximates B
 
-   quad_float **B1;  // approximates B
 
-   typedef quad_float *quad_floatptr;
+   Unique2DArray<quad_float> mu_store;
+   mu_store.SetDimsFrom1(m+2, m+1);
+   quad_float **mu = mu_store.get();
 
-   B1 = NTL_NEW_OP quad_floatptr[m+2];
-   if (!B1) Error("BKZ_QP: out of memory");
+   UniqueArray<quad_float> c_store;
+   c_store.SetLength(m+2);
+   quad_float *c = c_store.get(); // squared lengths of Gramm-Schmidt basis vectors
 
-   for (i = 1; i <= m+1; i++) {
-      B1[i] = NTL_NEW_OP quad_float[n+1];
-      if (!B1[i]) Error("BKZ_QP: out of memory");
-   }
-
-   quad_float **mu;
-   mu = NTL_NEW_OP quad_floatptr[m+2];
-   if (!mu) Error("BKZ_QP: out of memory");
-
-   for (i = 1; i <= m+1; i++) {
-      mu[i] = NTL_NEW_OP quad_float[m+1];
-      if (!mu[i]) Error("BKZ_QP: out of memory");
-   }
-
-   quad_float *c; // squared lengths of Gramm-Schmidt basis vectors
-
-   c = NTL_NEW_OP quad_float[m+2];
-   if (!c) Error("BKZ_QP: out of memory");
-
-   quad_float *b; // squared lengths of basis vectors
-
-   b = NTL_NEW_OP quad_float[m+2];
-   if (!b) Error("BKZ_QP: out of memory");
+   UniqueArray<quad_float> b_store;
+   b_store.SetLength(m+2);
+   quad_float *b = b_store.get(); // squared lengths of basis vectors
 
    quad_float cbar;
 
-   quad_float *ctilda;
-   ctilda = NTL_NEW_OP quad_float[m+2];
-   if (!ctilda) Error("BKZ_QP: out of memory");
 
-   quad_float *vvec;
-   vvec = NTL_NEW_OP quad_float[m+2];
-   if (!vvec) Error("BKZ_QP: out of memory");
-
-   quad_float *yvec;
-   yvec = NTL_NEW_OP quad_float[m+2];
-   if (!yvec) Error("BKZ_QP: out of memory");
-
-   quad_float *uvec;
-   uvec = NTL_NEW_OP quad_float[m+2];
-   if (!uvec) Error("BKZ_QP: out of memory");
-
-   quad_float *utildavec;
-   utildavec = NTL_NEW_OP quad_float[m+2];
-   if (!utildavec) Error("BKZ_QP: out of memory");
+   UniqueArray<quad_float> ctilda_store;
+   ctilda_store.SetLength(m+2);
+   quad_float *ctilda = ctilda_store.get();
 
 
-   long *Deltavec;
-   Deltavec = NTL_NEW_OP long[m+2];
-   if (!Deltavec) Error("BKZ_QP: out of memory");
+   UniqueArray<quad_float> vvec_store;
+   vvec_store.SetLength(m+2);
+   quad_float *vvec = vvec_store.get();
 
-   long *deltavec;
-   deltavec = NTL_NEW_OP long[m+2];
-   if (!deltavec) Error("BKZ_QP: out of memory");
+   UniqueArray<quad_float> yvec_store;
+   yvec_store.SetLength(m+2);
+   quad_float *yvec = yvec_store.get();
+
+   UniqueArray<quad_float> uvec_store;
+   uvec_store.SetLength(m+2);
+   quad_float *uvec = uvec_store.get();
+
+   UniqueArray<quad_float> utildavec_store;
+   utildavec_store.SetLength(m+2);
+   quad_float *utildavec = utildavec_store.get();
+
+   UniqueArray<long> Deltavec_store;
+   Deltavec_store.SetLength(m+2);
+   long *Deltavec = Deltavec_store.get();
+
+   UniqueArray<long> deltavec_store;
+   deltavec_store.SetLength(m+2);
+   long *deltavec = deltavec_store.get();;
+
 
    mat_ZZ Ulocal;
    mat_ZZ *U;
@@ -1352,7 +1302,7 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                }
             }
    
-            if (s == 0) Error("BKZ_QP: internal error");
+            if (s == 0) LogicError("BKZ_QP: internal error");
    
             if (s > 0) {
                // special case
@@ -1370,7 +1320,7 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                // cerr << "special case\n";
                new_m = ll_LLL_QP(B, U, delta, 0, check, 
                                 B1, mu, b, c, h, jj, quit);
-               if (new_m != h) Error("BKZ_QP: internal error");
+               if (new_m != h) LogicError("BKZ_QP: internal error");
                if (quit) break;
             }
             else {
@@ -1409,14 +1359,14 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                b[jj] = InnerProduct(B1[jj], B1[jj], n);
                CheckFinite(&b[jj]);
       
-               if (b[jj] == 0) Error("BKZ_QP: internal error"); 
+               if (b[jj] == 0) LogicError("BKZ_QP: internal error"); 
       
                // remove linear dependencies
    
                // cerr << "general case\n";
                new_m = ll_LLL_QP(B, U, delta, 0, 0, B1, mu, b, c, kk+1, jj, quit);
               
-               if (new_m != kk) Error("BKZ_QP: internal error"); 
+               if (new_m != kk) LogicError("BKZ_QP: internal error"); 
 
                // remove zero vector
       
@@ -1445,7 +1395,7 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                   new_m = ll_LLL_QP(B, U, delta, 0, check, 
                                    B1, mu, b, c, h, h, quit);
    
-                  if (new_m != h) Error("BKZ_QP: internal error");
+                  if (new_m != h) LogicError("BKZ_QP: internal error");
                   if (quit) break;
                }
             }
@@ -1462,7 +1412,7 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
             if (!clean) {
                new_m = 
                   ll_LLL_QP(B, U, delta, 0, check, B1, mu, b, c, h, h, quit);
-               if (new_m != h) Error("BKZ_QP: internal error");
+               if (new_m != h) LogicError("BKZ_QP: internal error");
                if (quit) break;
             }
    
@@ -1503,29 +1453,6 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
       *UU = *U;
    }
 
-   for (i = 1; i <= m_orig+1; i++) {
-      delete [] B1[i];
-   }
-
-   delete [] B1;
-
-   for (i = 1; i <= m_orig+1; i++) {
-      delete [] mu[i];
-   }
-
-   delete [] mu;
-
-
-   delete [] c;
-   delete [] b;
-   delete [] ctilda;
-   delete [] vvec;
-   delete [] yvec;
-   delete [] uvec;
-   delete [] utildavec;
-   delete [] Deltavec;
-   delete [] deltavec;
-
    return m;
 }
 
@@ -1540,8 +1467,8 @@ long BKZ_QP(mat_ZZ& BB, mat_ZZ& UU, double delta,
    }
 
 
-   if (delta < 0.50 || delta >= 1) Error("BKZ_QP: bad delta");
-   if (beta < 2) Error("BKZ_QP: bad block size");
+   if (delta < 0.50 || delta >= 1) LogicError("BKZ_QP: bad delta");
+   if (beta < 2) LogicError("BKZ_QP: bad block size");
 
    return BKZ_QP(BB, &UU, to_quad_float(delta), beta, prune, check);
 }
@@ -1558,8 +1485,8 @@ long BKZ_QP(mat_ZZ& BB, double delta,
 
 
 
-   if (delta < 0.50 || delta >= 1) Error("BKZ_QP: bad delta");
-   if (beta < 2) Error("BKZ_QP: bad block size");
+   if (delta < 0.50 || delta >= 1) LogicError("BKZ_QP: bad delta");
+   if (beta < 2) LogicError("BKZ_QP: bad block size");
 
    return BKZ_QP(BB, 0, to_quad_float(delta), beta, prune, check);
 }
@@ -1586,68 +1513,54 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
 
    B.SetDims(m+1, n);
 
+   Unique2DArray<quad_float> B1_store;
+   B1_store.SetDimsFrom1(m+2, n+1);
+   quad_float **B1 = B1_store.get();  // approximates B
 
-   quad_float **B1;  // approximates B
 
-   typedef quad_float *quad_floatptr;
+   Unique2DArray<quad_float> mu_store;
+   mu_store.SetDimsFrom1(m+2, m+1);
+   quad_float **mu = mu_store.get();
 
-   B1 = NTL_NEW_OP quad_floatptr[m+2];
-   if (!B1) Error("BKZ_QP: out of memory");
+   UniqueArray<quad_float> c_store;
+   c_store.SetLength(m+2);
+   quad_float *c = c_store.get(); // squared lengths of Gramm-Schmidt basis vectors
 
-   for (i = 1; i <= m+1; i++) {
-      B1[i] = NTL_NEW_OP quad_float[n+1];
-      if (!B1[i]) Error("BKZ_QP: out of memory");
-   }
-
-   quad_float **mu;
-   mu = NTL_NEW_OP quad_floatptr[m+2];
-   if (!mu) Error("BKZ_QP: out of memory");
-
-   for (i = 1; i <= m+1; i++) {
-      mu[i] = NTL_NEW_OP quad_float[m+1];
-      if (!mu[i]) Error("BKZ_QP: out of memory");
-   }
-
-   quad_float *c; // squared lengths of Gramm-Schmidt basis vectors
-
-   c = NTL_NEW_OP quad_float[m+2];
-   if (!c) Error("BKZ_QP: out of memory");
-
-   quad_float *b; // squared lengths of basis vectors
-
-   b = NTL_NEW_OP quad_float[m+2];
-   if (!b) Error("BKZ_QP: out of memory");
+   UniqueArray<quad_float> b_store;
+   b_store.SetLength(m+2);
+   quad_float *b = b_store.get(); // squared lengths of basis vectors
 
    double cbar;
 
-   double *ctilda;
-   ctilda = NTL_NEW_OP double[m+2];
-   if (!ctilda) Error("BKZ_QP: out of memory");
 
-   double *vvec;
-   vvec = NTL_NEW_OP double[m+2];
-   if (!vvec) Error("BKZ_QP: out of memory");
-
-   double *yvec;
-   yvec = NTL_NEW_OP double[m+2];
-   if (!yvec) Error("BKZ_QP: out of memory");
-
-   double *uvec;
-   uvec = NTL_NEW_OP double[m+2];
-   if (!uvec) Error("BKZ_QP: out of memory");
-
-   double *utildavec;
-   utildavec = NTL_NEW_OP double[m+2];
-   if (!utildavec) Error("BKZ_QP: out of memory");
+   UniqueArray<double> ctilda_store;
+   ctilda_store.SetLength(m+2);
+   double *ctilda = ctilda_store.get();
 
 
-   long *Deltavec;
-   Deltavec = NTL_NEW_OP long[m+2];
-   if (!Deltavec) Error("BKZ_QP: out of memory");
+   UniqueArray<double> vvec_store;
+   vvec_store.SetLength(m+2);
+   double *vvec = vvec_store.get();
 
-   long *deltavec;
-   deltavec = NTL_NEW_OP long[m+2];
-   if (!deltavec) Error("BKZ_QP: out of memory");
+   UniqueArray<double> yvec_store;
+   yvec_store.SetLength(m+2);
+   double *yvec = yvec_store.get();
+
+   UniqueArray<double> uvec_store;
+   uvec_store.SetLength(m+2);
+   double *uvec = uvec_store.get();
+
+   UniqueArray<double> utildavec_store;
+   utildavec_store.SetLength(m+2);
+   double *utildavec = utildavec_store.get();
+
+   UniqueArray<long> Deltavec_store;
+   Deltavec_store.SetLength(m+2);
+   long *Deltavec = Deltavec_store.get();
+
+   UniqueArray<long> deltavec_store;
+   deltavec_store.SetLength(m+2);
+   long *deltavec = deltavec_store.get();;
 
    mat_ZZ Ulocal;
    mat_ZZ *U;
@@ -1868,7 +1781,7 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                }
             }
    
-            if (s == 0) Error("BKZ_QP: internal error");
+            if (s == 0) LogicError("BKZ_QP: internal error");
    
             if (s > 0) {
                // special case
@@ -1886,7 +1799,7 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                // cerr << "special case\n";
                new_m = ll_LLL_QP(B, U, delta, 0, check, 
                                 B1, mu, b, c, h, jj, quit);
-               if (new_m != h) Error("BKZ_QP: internal error");
+               if (new_m != h) LogicError("BKZ_QP: internal error");
                if (quit) break;
             }
             else {
@@ -1925,14 +1838,14 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                b[jj] = InnerProduct(B1[jj], B1[jj], n);
                CheckFinite(&b[jj]);
       
-               if (b[jj] == 0) Error("BKZ_QP: internal error"); 
+               if (b[jj] == 0) LogicError("BKZ_QP: internal error"); 
       
                // remove linear dependencies
    
                // cerr << "general case\n";
                new_m = ll_LLL_QP(B, U, delta, 0, 0, B1, mu, b, c, kk+1, jj, quit);
               
-               if (new_m != kk) Error("BKZ_QP: internal error"); 
+               if (new_m != kk) LogicError("BKZ_QP: internal error"); 
 
                // remove zero vector
       
@@ -1961,7 +1874,7 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
                   new_m = ll_LLL_QP(B, U, delta, 0, check, 
                                    B1, mu, b, c, h, h, quit);
    
-                  if (new_m != h) Error("BKZ_QP: internal error");
+                  if (new_m != h) LogicError("BKZ_QP: internal error");
                   if (quit) break;
                }
             }
@@ -1978,7 +1891,7 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
             if (!clean) {
                new_m = 
                   ll_LLL_QP(B, U, delta, 0, check, B1, mu, b, c, h, h, quit);
-               if (new_m != h) Error("BKZ_QP: internal error");
+               if (new_m != h) LogicError("BKZ_QP: internal error");
                if (quit) break;
             }
    
@@ -2019,29 +1932,6 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ* UU, quad_float delta,
       *UU = *U;
    }
 
-   for (i = 1; i <= m_orig+1; i++) {
-      delete [] B1[i];
-   }
-
-   delete [] B1;
-
-   for (i = 1; i <= m_orig+1; i++) {
-      delete [] mu[i];
-   }
-
-   delete [] mu;
-
-
-   delete [] c;
-   delete [] b;
-   delete [] ctilda;
-   delete [] vvec;
-   delete [] yvec;
-   delete [] uvec;
-   delete [] utildavec;
-   delete [] Deltavec;
-   delete [] deltavec;
-
    return m;
 }
 
@@ -2056,8 +1946,8 @@ long BKZ_QP1(mat_ZZ& BB, mat_ZZ& UU, double delta,
    }
 
 
-   if (delta < 0.50 || delta >= 1) Error("BKZ_QP: bad delta");
-   if (beta < 2) Error("BKZ_QP: bad block size");
+   if (delta < 0.50 || delta >= 1) LogicError("BKZ_QP: bad delta");
+   if (beta < 2) LogicError("BKZ_QP: bad block size");
 
    return BKZ_QP1(BB, &UU, to_quad_float(delta), beta, prune, check);
 }
@@ -2074,8 +1964,8 @@ long BKZ_QP1(mat_ZZ& BB, double delta,
 
 
 
-   if (delta < 0.50 || delta >= 1) Error("BKZ_QP: bad delta");
-   if (beta < 2) Error("BKZ_QP: bad block size");
+   if (delta < 0.50 || delta >= 1) LogicError("BKZ_QP: bad delta");
+   if (beta < 2) LogicError("BKZ_QP: bad block size");
 
    return BKZ_QP1(BB, 0, to_quad_float(delta), beta, prune, check);
 }

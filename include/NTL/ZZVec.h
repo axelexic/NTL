@@ -40,8 +40,8 @@ public:
    void SetSize(long n, long d);
    void kill();
 
-   ZZVec() { v = 0; len = 0; bsize = 0; }
-   ZZVec(long n, long d) { v = 0; len = 0; bsize = 0; SetSize(n, d); }
+   ZZVec() : v(0), len(0), bsize(0) { }
+   ZZVec(long n, long d) : v(0), len(0), bsize(0)  { SetSize(n, d); }
    ~ZZVec() { kill(); };
 
    ZZ* elts() { return v; }
@@ -50,11 +50,11 @@ public:
    ZZ& operator[](long i) { return v[i]; }
    const ZZ& operator[](long i) const { return v[i]; }
 
-   static void swap_impl(ZZVec& x, ZZVec& y);
+   void swap(ZZVec& x);
 
 };
 
-inline void swap(ZZVec& x, ZZVec& y) { ZZVec::swap_impl(x, y); }
+inline void swap(ZZVec& x, ZZVec& y) { x.swap(y); }
 
 NTL_CLOSE_NNS
 

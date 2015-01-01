@@ -68,7 +68,7 @@ void SquareFreeDecomp(vec_pair_GF2X_long& u, const GF2X& ff)
 {
    GF2X f = ff;
 
-   if (IsZero(f)) Error("SquareFreeDecomp: bad args");
+   if (IsZero(f)) LogicError("SquareFreeDecomp: bad args");
 
    GF2X r, t, v, tmp1;
    long m, j, finished, done;
@@ -205,13 +205,13 @@ void TraceMap(GF2X& w, const GF2X& a, long d, const GF2XModulus& F)
 }
 
 
-long GF2X_BlockingFactor = 40;
+const long GF2X_BlockingFactor = 40;
 
 void DDF(vec_pair_GF2X_long& factors, const GF2X& ff, long verbose)
 {
    GF2X f = ff;
 
-   if (IsZero(f)) Error("DDF: bad args");
+   if (IsZero(f)) LogicError("DDF: bad args");
 
    factors.SetLength(0);
 
@@ -315,7 +315,7 @@ void EDF(vec_GF2X& factors, const GF2X& ff, long d, long verbose)
 {
    GF2X f = ff;
 
-   if (IsZero(f)) Error("EDF: bad args");
+   if (IsZero(f)) LogicError("EDF: bad args");
 
    long n = deg(f);
    long r = n/d;
@@ -360,7 +360,7 @@ void SFCanZass(vec_GF2X& factors, const GF2X& ff, long verbose)
 {
    GF2X f = ff;
 
-   if (IsZero(f)) Error("SFCanZass: bad args");
+   if (IsZero(f)) LogicError("SFCanZass: bad args");
 
    if (deg(f) == 0) {
       factors.SetLength(0);
@@ -411,7 +411,7 @@ void SFCanZass(vec_GF2X& factors, const GF2X& ff, long verbose)
 void CanZass(vec_pair_GF2X_long& factors, const GF2X& f, long verbose)
 {
    if (IsZero(f))
-      Error("CanZass: bad args");
+      LogicError("CanZass: bad args");
 
    double t;
    vec_pair_GF2X_long sfd;
@@ -475,9 +475,9 @@ void ConvertBits(GF2X& x, _ntl_ulong b)
 void BuildIrred(GF2X& f, long n)
 {
    if (n <= 0)
-      Error("BuildIrred: n must be positive");
+      LogicError("BuildIrred: n must be positive");
 
-   if (NTL_OVERFLOW(n, 1, 0)) Error("overflow in BuildIrred");
+   if (NTL_OVERFLOW(n, 1, 0)) ResourceError("overflow in BuildIrred");
 
    if (n == 1) {
       SetX(f);
@@ -869,7 +869,7 @@ static int GF2X_irred_tab[][3] =
 static
 long FindTrinom(long n)
 {
-   if (n < 2) Error("tri--bad n");
+   if (n < 2) LogicError("tri--bad n");
 
    long k;
 
@@ -884,7 +884,7 @@ long FindTrinom(long n)
 static
 long FindPent(long n, long& kk2, long& kk1)
 {
-   if (n < 4) Error("pent--bad n");
+   if (n < 4) LogicError("pent--bad n");
 
    long k1, k2, k3;
 
@@ -902,10 +902,10 @@ long FindPent(long n, long& kk2, long& kk1)
 
 void BuildSparseIrred(GF2X& f, long n)
 {
-   if (n <= 0) Error("SparseIrred: n <= 0");
+   if (n <= 0) LogicError("SparseIrred: n <= 0");
 
    if (NTL_OVERFLOW(n, 1, 0)) 
-      Error("overflow in BuildSparseIrred");
+      ResourceError("overflow in BuildSparseIrred");
 
    if (n == 1) {
       SetX(f);

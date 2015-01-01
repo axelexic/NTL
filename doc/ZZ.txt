@@ -24,13 +24,20 @@ numbers.
 class ZZ {
 public:
 
+
    ZZ(); // initial value is 0
+
+   ZZ(const ZZ& a);  // copy constructor
+   explicit ZZ(long a);  // promotion constructor
+
+   ~ZZ(); // destructor
 
    ZZ& operator=(const ZZ& a);  // assignment operator
    ZZ& operator=(long a);  
 
-   ZZ(const ZZ& a);  // copy constructor
-   ~ZZ(); // destructor
+   // typedefs to aid in generic programming
+   typedef ZZ_p residue_type;
+   typedef ZZX poly_type;
 
 
    // ...
@@ -289,10 +296,27 @@ ZZ MulMod(const ZZ& a, const ZZ& b, const ZZ& n);
 void SqrMod(ZZ& x, const ZZ& a, const ZZ& n); // x = a^2 % n
 ZZ SqrMod(const ZZ& a, const ZZ& n);
 
+
+
+
 void InvMod(ZZ& x, const ZZ& a, const ZZ& n);
 ZZ InvMod(const ZZ& a, const ZZ& n);
 // x = a^{-1} mod n (0 <= x < n); error is raised occurs if inverse
 // not defined
+
+// If exceptions are enabled, an object of the following class 
+// is throw by the InvMod routine if the inverse of a mod n is
+// not defined. The methods get_a() and get_n() give read-only
+// access to the offending values of a and n.
+// This also happens for any indirect call to InvMod, via PowerMod,
+// of via inverse computations in ZZ_p.
+
+class InvModErrorObject : public ArithmeticErrorObject {
+public:
+   InvModErrorObject(const char *s, const ZZ& a, const ZZ& n);
+   const ZZ& get_a() const;
+   const ZZ& get_n() const;
+};
 
 long InvModStatus(ZZ& x, const ZZ& a, const ZZ& n);
 // if gcd(a,b) = 1, then return-value = 0, x = a^{-1} mod n;
@@ -547,10 +571,12 @@ void SetSeed(const ZZ& s);
 // not necessary that s itself looks random, just that 
 // it has a lot of "entropy".
 // If SetSeed is not called before using the routines below,
-// a default initial state is used.
-// Calling SetSeed with s == 0, e.g. SetSeed(ZZ::zero()), 
-// has the effect of re-setting the state to the default initial state.
-// Routine ZZFromBytes (above) may be useful.
+// a default initial seed is used.
+// This default seed is guaranteed to be unique among different
+// threads in a given process, and an attempt is made to 
+// make this seed globally unique among all threads and processes.
+// Routine ZZFromBytes (above) may be useful for constructing seeds
+// from arbitrary binary data.
 
 
 void RandomBnd(ZZ& x, const ZZ& n);
@@ -838,6 +864,9 @@ long digit(const ZZ& a, long k);
 
 void ZZ::kill();
 // a.kill() sets a to zero and frees the space held by a.
+
+void ZZ::swap(ZZ& x);
+// swap method (done by "pointer swapping" if possible)
 
 ZZ::ZZ(INIT_SIZE_TYPE, long k);
 // ZZ(INIT_SIZE, k) initializes to 0, but space is pre-allocated so

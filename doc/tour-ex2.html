@@ -4,7 +4,6 @@
 A Tour of NTL: Examples: Vectors and Matrices </title>
 </head>
 
-<body bgcolor="#fff9e6">
 <center>
 <a href="tour-ex1.html"><img src="arrow1.gif" alt="[Previous]" align=bottom></a>
  <a href="tour-examples.html"><img src="arrow2.gif" alt="[Up]" align=bottom></a> 
@@ -25,25 +24,47 @@ A Tour of NTL: Examples: Vectors and Matrices
 The following routine sums up the 
 numbers in a vector of <tt>ZZ</tt>'s.
 
-<pre>
-#include &lt;NTL/ZZ.h&gt;
-#include &lt;NTL/vector.h&gt;
+<!-- STARTPLAIN
+#include <NTL/ZZ.h>
+#include <NTL/vector.h>
 
 using namespace std;
 using namespace NTL;
 
-ZZ sum(const Vec&lt;ZZ&gt;&amp; v)
+ZZ sum(const Vec<ZZ>& v)
 {
    ZZ acc;
 
    acc = 0;
 
-   for (long i = 0; i &lt; v.length(); i++)
+   for (long i = 0; i < v.length(); i++)
       acc += v[i];
 
    return acc;
 }
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000"><font face="monospace">
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/ZZ.h&gt;</font><br>
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/vector.h&gt;</font><br>
+<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;std;<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;NTL;<br>
+<br>
+ZZ sum(<font color="#008b00"><b>const</b></font>&nbsp;Vec&lt;ZZ&gt;&amp; v)<br>
+{<br>
+&nbsp;&nbsp; ZZ acc;<br>
+<br>
+&nbsp;&nbsp; acc = <font color="#ff8b00">0</font>;<br>
+<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>for</b></font>&nbsp;(<font color="#008b00"><b>long</b></font>&nbsp;i = <font color="#ff8b00">0</font>; i &lt; v.length(); i++)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acc += v[i];<br>
+<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>return</b></font>&nbsp;acc;<br>
+}<br>
+</font></font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 
 <p>
 The class <tt>Vec&lt;ZZ&gt;</tt> is a dynamic-length array of <tt>ZZ</tt>s;
@@ -68,25 +89,47 @@ it is convenient or more natural to index from 1.
 The generic vector class allows for this;
 the above example could be written as follows.
 
-<pre>
-#include &lt;NTL/ZZ.h&gt;
-#include &lt;NTL/vector.h&gt;
+<!-- STARTPLAIN
+#include <NTL/ZZ.h>
+#include <NTL/vector.h>
 
 using namespace std;
 using namespace NTL;
 
-ZZ sum(ZZ&amp; s, const Vec&lt;ZZ&gt;&amp; v)
+ZZ sum(ZZ& s, const Vec<ZZ>& v)
 {
    ZZ acc;
 
    acc = 0;
 
-   for (long i = 1; i &lt;= v.length(); i++)
+   for (long i = 1; i <= v.length(); i++)
       acc += v(i); 
 
    return acc;
 }
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000"><font face="monospace">
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/ZZ.h&gt;</font><br>
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/vector.h&gt;</font><br>
+<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;std;<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;NTL;<br>
+<br>
+ZZ sum(ZZ&amp; s, <font color="#008b00"><b>const</b></font>&nbsp;Vec&lt;ZZ&gt;&amp; v)<br>
+{<br>
+&nbsp;&nbsp; ZZ acc;<br>
+<br>
+&nbsp;&nbsp; acc = <font color="#ff8b00">0</font>;<br>
+<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>for</b></font>&nbsp;(<font color="#008b00"><b>long</b></font>&nbsp;i = <font color="#ff8b00">1</font>; i &lt;= v.length(); i++)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acc += v(i); <br>
+<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>return</b></font>&nbsp;acc;<br>
+}<br>
+</font></font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 
 <p>
 Note that by default, NTL does not perform range checks on 
@@ -102,17 +145,17 @@ as well as changing the length of a vector.
 This program reads a <tt>Vec&lt;ZZ&gt;</tt>,
 and then creates and prints a "palindrome". 
 
-<pre>
-#include &lt;NTL/ZZ.h&gt;
-#include &lt;NTL/vector.h&gt;
+<!-- STARTPLAIN
+#include <NTL/ZZ.h>
+#include <NTL/vector.h>
 
 using namespace std;
 using namespace NTL;
 
 int main()
 {
-   Vec&lt;ZZ&gt; v;
-   cin &gt;&gt; v;
+   Vec<ZZ> v;
+   cin >> v;
 
    long n = v.length();
    v.SetLength(2*n);
@@ -121,9 +164,34 @@ int main()
    for (i = 0 ; i < n; i++)
       v[n+i] = v[n-1-i];
 
-   cout &lt;&lt; v &lt;&lt "\n";
+   cout << v << "\n";
 }
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000"><font face="monospace">
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/ZZ.h&gt;</font><br>
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/vector.h&gt;</font><br>
+<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;std;<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;NTL;<br>
+<br>
+<font color="#008b00"><b>int</b></font>&nbsp;main()<br>
+{<br>
+&nbsp;&nbsp; Vec&lt;ZZ&gt; v;<br>
+&nbsp;&nbsp; cin &gt;&gt; v;<br>
+<br>
+&nbsp;&nbsp; <font color="#008b00"><b>long</b></font>&nbsp;n = v.length();<br>
+&nbsp;&nbsp; v.SetLength(<font color="#ff8b00">2</font>*n);<br>
+<br>
+&nbsp;&nbsp; <font color="#008b00"><b>long</b></font>&nbsp;i;<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>for</b></font>&nbsp;(i = <font color="#ff8b00">0</font>&nbsp;; i &lt; n; i++)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v[n+i] = v[n-<font color="#ff8b00">1</font>-i];<br>
+<br>
+&nbsp;&nbsp; cout &lt;&lt; v &lt;&lt; <font color="#4a6f8b">&quot;</font><font color="#8a2ae2">\n</font><font color="#4a6f8b">&quot;</font>;<br>
+}<br>
+</font></font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 
 <p>
 
@@ -144,7 +212,7 @@ as input, the output is
 
 <p>
 
-See <a href="vector.txt"><tt>vector.txt</tt></a> for
+See <a href="vector.cpp.html"><tt>vector.txt</tt></a> for
 complete details of NTL's generic vector mechanism.
 
 Also note that for several fundamental vector types, such as
@@ -153,7 +221,7 @@ Also note that for several fundamental vector types, such as
 a number of basic arithmetic operations,
 as well as provides the typedef 
 typedef <tt>vec_ZZ</tt> for backward compatibilty.
-See <a href="vec_ZZ.txt"><tt>vec_ZZ.txt</tt></a> for
+See <a href="vec_ZZ.cpp.html"><tt>vec_ZZ.txt</tt></a> for
 complete details on the arithmetic operations for <tt>Vec&lt;ZZ&gt;</tt>'s
 provided by NTL.
 
@@ -177,14 +245,14 @@ for notational convenience, the latter is equivalent to <tt>M(i,j)</tt>.
 Here is a matrix multiplication routine,
 which in fact is already provided by NTL.
 
-<pre>
-#include &lt;NTL/ZZ.h&gt;
-#include &lt;NTL/matrix.h&gt;
+<!-- STARTPLAIN
+#include <NTL/ZZ.h>
+#include <NTL/matrix.h>
 
 using namespace std;
 using namespace NTL;
 
-void mul(Mat&lt;ZZ&gt;&amp; X, const Mat&lt;ZZ&gt;&amp; A, const Mat&lt;ZZ&gt;&amp; B)
+void mul(Mat<ZZ>& X, const Mat<ZZ>& A, const Mat<ZZ>& B)
 {
    long n = A.NumRows();
    long l = A.NumCols();
@@ -198,10 +266,10 @@ void mul(Mat&lt;ZZ&gt;&amp; X, const Mat&lt;ZZ&gt;&amp; A, const Mat&lt;ZZ&gt;&a
    long i, j, k;
    ZZ acc, tmp;
 
-   for (i = 1; i &lt;= n; i++) {
-      for (j = 1; j &lt;= m; j++) {
+   for (i = 1; i <= n; i++) {
+      for (j = 1; j <= m; j++) {
          acc = 0;
-         for(k = 1; k &lt;= l; k++) {
+         for(k = 1; k <= l; k++) {
             mul(tmp, A(i,k), B(k,j));
             add(acc, acc, tmp);
          }
@@ -209,7 +277,43 @@ void mul(Mat&lt;ZZ&gt;&amp; X, const Mat&lt;ZZ&gt;&amp; A, const Mat&lt;ZZ&gt;&a
       }
    }
 }
-</pre>
+ENDPLAIN -->
+<!-- STARTPRETTY {{{ -->
+<p><p><table cellPadding=10px><tr><td><font color="#000000"><font face="monospace">
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/ZZ.h&gt;</font><br>
+<font color="#1773cc">#include </font><font color="#4a6f8b">&lt;NTL/matrix.h&gt;</font><br>
+<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;std;<br>
+<font color="#b02f60"><b>using</b></font>&nbsp;<font color="#008b00"><b>namespace</b></font>&nbsp;NTL;<br>
+<br>
+<font color="#008b00"><b>void</b></font>&nbsp;mul(Mat&lt;ZZ&gt;&amp; X, <font color="#008b00"><b>const</b></font>&nbsp;Mat&lt;ZZ&gt;&amp; A, <font color="#008b00"><b>const</b></font>&nbsp;Mat&lt;ZZ&gt;&amp; B)<br>
+{<br>
+&nbsp;&nbsp; <font color="#008b00"><b>long</b></font>&nbsp;n = A.NumRows();<br>
+&nbsp;&nbsp; <font color="#008b00"><b>long</b></font>&nbsp;l = A.NumCols();<br>
+&nbsp;&nbsp; <font color="#008b00"><b>long</b></font>&nbsp;m = B.NumCols();<br>
+<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>if</b></font>&nbsp;(l != B.NumRows())<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Error(<font color="#4a6f8b">&quot;matrix mul: dimension mismatch&quot;</font>);<br>
+<br>
+&nbsp;&nbsp; X.SetDims(n, m); <font color="#0000ed"><i>// make X have n rows and m columns</i></font><br>
+<br>
+&nbsp;&nbsp; <font color="#008b00"><b>long</b></font>&nbsp;i, j, k;<br>
+&nbsp;&nbsp; ZZ acc, tmp;<br>
+<br>
+&nbsp;&nbsp; <font color="#b02f60"><b>for</b></font>&nbsp;(i = <font color="#ff8b00">1</font>; i &lt;= n; i++) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#b02f60"><b>for</b></font>&nbsp;(j = <font color="#ff8b00">1</font>; j &lt;= m; j++) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; acc = <font color="#ff8b00">0</font>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font color="#b02f60"><b>for</b></font>(k = <font color="#ff8b00">1</font>; k &lt;= l; k++) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mul(tmp, A(i,k), B(k,j));<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add(acc, acc, tmp);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; X(i,j) = acc;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp; }<br>
+}<br>
+</font></font></td></tr></table><p><p>
+<!-- }}} ENDPRETTY -->
+
 
 <p>
 In case of a dimension mismatch, the routine calls the 
@@ -236,12 +340,12 @@ or one can also use the operator notation
 
 <p>
 NTL provides several matrix types.
-See <a href="matrix.txt"><tt>matrix.txt</tt></a>
+See <a href="matrix.cpp.html"><tt>matrix.txt</tt></a>
 for complete details on NTL's generic matrix mechanism.
-Also see <a href="mat_ZZ.txt"><tt>mat_ZZ.txt</tt></a> for
+Also see <a href="mat_ZZ.cpp.html"><tt>mat_ZZ.txt</tt></a> for
 complete details on the arithmetic operations for <tt>Mat&lt;ZZ&gt;</tt>'s
 provideed by NTL (including basic linear algebra).
-Also see <a href="LLL.txt"><tt>LLL.txt</tt></a> 
+Also see <a href="LLL.cpp.html"><tt>LLL.txt</tt></a> 
 for details on routines for lattice basis reduction
 (as well as routines for finding the kernel and image of a matrix).
 

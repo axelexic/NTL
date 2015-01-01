@@ -6,12 +6,19 @@
 #include <NTL/ZZ.h>
 #include <NTL/WordVector.h>
 #include <NTL/vec_GF2.h>
+#include <NTL/Lazy.h>
 
 NTL_OPEN_NNS
 
+class GF2E; // forward declaration
+class GF2XModulus;
 
 class GF2X {
 public:
+typedef GF2 coeff_type;
+typedef GF2E residue_type;
+typedef GF2XModulus modulus_type;
+
 
 WordVector xrep;
 
@@ -19,6 +26,10 @@ typedef vec_GF2 VectorBaseType;
 
 
 GF2X() { }
+
+explicit GF2X(long a) { *this = a; }
+explicit GF2X(GF2 a) { *this = a; }
+
 ~GF2X() { }
 
 GF2X(INIT_SIZE_TYPE, long n);
@@ -38,7 +49,6 @@ void SetMaxLength(long n);
 
 
 
-typedef GF2 coeff_type;
 void SetLength(long n);
 ref_GF2 operator[](long i);
 const GF2 operator[](long i) const;
@@ -46,12 +56,29 @@ const GF2 operator[](long i) const;
 
 
 
-static long HexOutput;
+NTL_THREAD_LOCAL static long HexOutput;
 
 inline GF2X(long i, GF2 c);
 inline GF2X(long i, long c);
 
+inline GF2X(INIT_MONO_TYPE, long i, GF2 c);
+inline GF2X(INIT_MONO_TYPE, long i, long c);
+inline GF2X(INIT_MONO_TYPE, long i);
+
 GF2X(GF2X& x, INIT_TRANS_TYPE) : xrep(x.xrep, INIT_TRANS) { }
+// This should only be used for simple, local variables
+// that are not be subject to special memory management.
+
+
+void swap(GF2X& x) { xrep.swap(x.xrep); }
+
+
+
+
+
+// mainly for internal consumption by GF2XWatcher
+
+void KillBig() { xrep.KillBig(); }
 
 };
 
@@ -81,13 +108,15 @@ void SetCoeff(GF2X& x, long i);
 void SetCoeff(GF2X& x, long i, GF2 a);
 void SetCoeff(GF2X& x, long i, long a);
 
-inline GF2X::GF2X(long i, GF2 a)
-   { SetCoeff(*this, i, a); }
+inline GF2X::GF2X(long i, GF2 a) { SetCoeff(*this, i, a); }
+inline GF2X::GF2X(long i, long a) { SetCoeff(*this, i, a); }
 
-inline GF2X::GF2X(long i, long a)
-   { SetCoeff(*this, i, a); }
+inline GF2X::GF2X(INIT_MONO_TYPE, long i, GF2 a) { SetCoeff(*this, i, a); }
+inline GF2X::GF2X(INIT_MONO_TYPE, long i, long a) { SetCoeff(*this, i, a); }
+inline GF2X::GF2X(INIT_MONO_TYPE, long i) { SetCoeff(*this, i); }
 
-void swap(GF2X& a, GF2X& b);
+
+inline void swap(GF2X& a, GF2X& b) { a.swap(b); }
 
 long deg(const GF2X& aa);
 
@@ -312,7 +341,6 @@ class GF2XModulus {
 
 public:
    GF2XModulus();
-   ~GF2XModulus();
 
    GF2XModulus(const GF2XModulus&);  
    GF2XModulus& operator=(const GF2XModulus&); 
@@ -341,14 +369,15 @@ public:
    long method; 
 
    vec_GF2X stab;
-   _ntl_ulong **stab_ptr;
-   long *stab_cnt;
 
-   _ntl_ulong *stab1;
+   UniqueArray<unsigned long *> stab_ptr;
+   UniqueArray<long> stab_cnt;
+   UniqueArray<unsigned long> stab1;
+
 
    GF2X h0, f0;
 
-   vec_GF2 tracevec;
+   OptionalVal< Lazy<vec_GF2> > tracevec;
 
 }; 
 
@@ -694,6 +723,38 @@ inline long NumBits(const GF2X& a)
 
 inline long NumBytes(const GF2X& a)
    { return (NumBits(a) + 7)/8; }
+
+
+
+// GF2X scratch variabes
+
+
+class GF2XWatcher {
+public:
+   GF2X& watched;
+   explicit
+   GF2XWatcher(GF2X& _watched) : watched(_watched) {}
+
+   ~GF2XWatcher() { watched.KillBig(); } 
+};
+
+#define NTL_GF2XRegister(x) NTL_THREAD_LOCAL static GF2X x; GF2XWatcher _WATCHER__ ## x(x)
+
+
+
+// RAII for HexOutput
+
+class GF2XHexOutputPush {
+private:
+   long OldHexOutput;
+
+   GF2XHexOutputPush(const GF2XHexOutputPush&); // disable
+   void operator=(const GF2XHexOutputPush&); // disable
+
+public:
+   GF2XHexOutputPush() : OldHexOutput(GF2X::HexOutput) { }
+   ~GF2XHexOutputPush() { GF2X::HexOutput = OldHexOutput; }
+};
 
 
 NTL_CLOSE_NNS

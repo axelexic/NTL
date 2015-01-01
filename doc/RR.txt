@@ -119,6 +119,10 @@ public:
 RR(); // = 0
 
 RR(const RR& a); // copy constructor
+
+
+explicit RR(double a);  // promotion constructor
+
 RR& operator=(const RR& a); // assignment operator
 
 // NOTE: the copy constructor and assignment operator
@@ -377,7 +381,9 @@ RR power2_RR(long e);
 void clear(RR& z);  // z = 0
 void set(RR& z);  // z = 1
 
-void swap(RR& a, RR& b);  // swaps a and b (by swapping pointers)
+void RR::swap(RR& a);
+void swap(RR& a, RR& b);  
+// swap (pointer swap)
 
 
 
@@ -500,8 +506,11 @@ RR ConvPrec(const quad_float& a, long p);
 void ConvPrec(RR& z, const char *s, long p); // read z from s
 RR ConvPrec(const char *s, long p);
 
-void InputPrec(RR& z, istream& s, long p); // read z from s
+istream& InputPrec(RR& z, istream& s, long p);  // read z from s
 RR InputPrec(istream& s, long p);
+// The functional variant raises an error if input
+// is missing or ill-formed, while procedural form
+// does not.
 
 void MakeRRPrec(RR& z, const ZZ& a, long e, long p); // z = a*2^e
 RR MakeRRPrec(const ZZ& a, long e, long p);

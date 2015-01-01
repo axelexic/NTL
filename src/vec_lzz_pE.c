@@ -21,8 +21,8 @@ void InnerProduct(zz_pE& x, const vec_zz_pE& a, const vec_zz_pE& b)
 void InnerProduct(zz_pE& x, const vec_zz_pE& a, const vec_zz_pE& b,
                   long offset)
 {
-   if (offset < 0) Error("InnerProduct: negative offset");
-   if (NTL_OVERFLOW(offset, 1, 0)) Error("InnerProduct: offset too big");
+   if (offset < 0) LogicError("InnerProduct: negative offset");
+   if (NTL_OVERFLOW(offset, 1, 0)) ResourceError("InnerProduct: offset too big");
 
    long n = min(a.length(), b.length()+offset);
    long i;
@@ -73,7 +73,7 @@ void mul(vec_zz_pE& x, const vec_zz_pE& a, long b_in)
 void add(vec_zz_pE& x, const vec_zz_pE& a, const vec_zz_pE& b)
 {
    long n = a.length();
-   if (b.length() != n) Error("vector add: dimension mismatch");
+   if (b.length() != n) LogicError("vector add: dimension mismatch");
 
    x.SetLength(n);
    long i;
@@ -84,7 +84,7 @@ void add(vec_zz_pE& x, const vec_zz_pE& a, const vec_zz_pE& b)
 void sub(vec_zz_pE& x, const vec_zz_pE& a, const vec_zz_pE& b)
 {
    long n = a.length();
-   if (b.length() != n) Error("vector sub: dimension mismatch");
+   if (b.length() != n) LogicError("vector sub: dimension mismatch");
 
    x.SetLength(n);
    long i;
@@ -157,8 +157,8 @@ zz_pE operator*(const vec_zz_pE& a, const vec_zz_pE& b)
 
 void VectorCopy(vec_zz_pE& x, const vec_zz_pE& a, long n)
 {
-   if (n < 0) Error("VectorCopy: negative length");
-   if (NTL_OVERFLOW(n, 1, 0)) Error("overflow in VectorCopy");
+   if (n < 0) LogicError("VectorCopy: negative length");
+   if (NTL_OVERFLOW(n, 1, 0)) ResourceError("overflow in VectorCopy");
 
    long m = min(n, a.length());
 

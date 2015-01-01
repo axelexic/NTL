@@ -9,7 +9,7 @@ NTL_START_IMPL
 
 const ZZX& ZZX::zero()
 {
-   static ZZX z;
+   NTL_THREAD_LOCAL static ZZX z;
    return z;
 }
 
@@ -30,7 +30,7 @@ void conv(ZZX& x, const ZZ_pX& a)
 
 istream& operator>>(istream& s, ZZX& x)
 {
-   s >> x.rep;
+   NTL_INPUT_CHECK_RET(s, s >> x.rep);
    x.normalize();
    return s;
 }
@@ -121,10 +121,10 @@ void SetCoeff(ZZX& x, long i, const ZZ& a)
    long j, m;
 
    if (i < 0) 
-      Error("SetCoeff: negative index");
+      LogicError("SetCoeff: negative index");
 
    if (NTL_OVERFLOW(i, 1, 0))
-      Error("overflow in SetCoeff");
+      ResourceError("overflow in SetCoeff");
 
    m = deg(x);
 
@@ -160,10 +160,10 @@ void SetCoeff(ZZX& x, long i)
    long j, m;
 
    if (i < 0) 
-      Error("coefficient index out of range");
+      LogicError("coefficient index out of range");
 
    if (NTL_OVERFLOW(i, 1, 0))
-      Error("overflow in SetCoeff");
+      ResourceError("overflow in SetCoeff");
 
    m = deg(x);
 
@@ -506,8 +506,8 @@ void PlainMul(ZZX& x, const ZZX& a, const ZZX& b)
       jmax = min(da, i);
       clear(accum);
       for (j = jmin; j <= jmax; j++) {
-	 mul(t, ap[j], bp[i-j]);
-	 add(accum, accum, t);
+         mul(t, ap[j], bp[i-j]);
+         add(accum, accum, t);
       }
       xp[i] = accum;
    }
@@ -554,13 +554,13 @@ void PlainSqr(ZZX& x, const ZZX& a)
       jmax = jmin + m2 - 1;
       clear(accum);
       for (j = jmin; j <= jmax; j++) {
-	 mul(t, ap[j], ap[i-j]);
-	 add(accum, accum, t);
+         mul(t, ap[j], ap[i-j]);
+         add(accum, accum, t);
       }
       add(accum, accum, accum);
       if (m & 1) {
-	 sqr(t, ap[jmax + 1]);
-	 add(accum, accum, t);
+         sqr(t, ap[jmax + 1]);
+         add(accum, accum, t);
       }
 
       xp[i] = accum;
@@ -579,7 +579,8 @@ void PlainMul(ZZ *xp, const ZZ *ap, long sa, const ZZ *bp, long sb)
    long sx = sa+sb-1;
 
    long i, j, jmin, jmax;
-   static ZZ t, accum;
+   NTL_ZZRegister(t);
+   NTL_ZZRegister(accum);
 
    for (i = 0; i < sx; i++) {
       jmin = max(0, i-sb+1);
@@ -827,7 +828,8 @@ void PlainSqr(ZZ* xp, const ZZ* ap, long sa)
 
    long i, j, jmin, jmax;
    long m, m2;
-   static ZZ t, accum;
+   NTL_ZZRegister(t);
+   NTL_ZZRegister(accum);
 
    for (i = 0; i <= d; i++) {
       jmin = max(0, i-da);
@@ -837,13 +839,13 @@ void PlainSqr(ZZ* xp, const ZZ* ap, long sa)
       jmax = jmin + m2 - 1;
       clear(accum);
       for (j = jmin; j <= jmax; j++) {
-	 mul(t, ap[j], ap[i-j]);
-	 add(accum, accum, t);
+         mul(t, ap[j], ap[i-j]);
+         add(accum, accum, t);
       }
       add(accum, accum, accum);
       if (m & 1) {
-	 sqr(t, ap[jmax + 1]);
-	 add(accum, accum, t);
+         sqr(t, ap[jmax + 1]);
+         add(accum, accum, t);
       }
 
       xp[i] = accum;

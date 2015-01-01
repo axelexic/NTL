@@ -8,63 +8,34 @@ NTL_START_IMPL
 
 ZZ_pEInfoT::ZZ_pEInfoT(const ZZ_pX& NewP)
 {
-   ref_count = 1;
-
    build(p, NewP);
 
-   _card_init = 0;
    _card_base = ZZ_p::modulus();
    _card_exp = deg(NewP);
 }
 
 const ZZ& ZZ_pE::cardinality()
 {
-   if (!ZZ_pEInfo) Error("ZZ_pE::cardinality: undefined modulus");
+   if (!ZZ_pEInfo) LogicError("ZZ_pE::cardinality: undefined modulus");
 
-   if (!ZZ_pEInfo->_card_init) {
-      power(ZZ_pEInfo->_card, ZZ_pEInfo->_card_base, ZZ_pEInfo->_card_exp);
-      ZZ_pEInfo->_card_init = 1;
-   }
-
-   return ZZ_pEInfo->_card;
+   do { // NOTE: thread safe lazy init
+      Lazy<ZZ>::Builder builder(ZZ_pEInfo->_card);
+      if (!builder()) break;
+      UniquePtr<ZZ> p;
+      p.make();
+      power(*p, ZZ_pEInfo->_card_base, ZZ_pEInfo->_card_exp);
+      builder.move(p);
+   } while (0);
+      
+   return *ZZ_pEInfo->_card;
 }
 
 
 
 
 
-ZZ_pEInfoT *ZZ_pEInfo = 0; 
-
-
-
-typedef ZZ_pEInfoT *ZZ_pEInfoPtr;
-
-
-static 
-void CopyPointer(ZZ_pEInfoPtr& dst, ZZ_pEInfoPtr src)
-{
-   if (src == dst) return;
-
-   if (dst) {
-      dst->ref_count--;
-
-      if (dst->ref_count < 0) 
-         Error("internal error: negative ZZ_pEContext ref_count");
-
-      if (dst->ref_count == 0) delete dst;
-   }
-
-   if (src) {
-      if (src->ref_count == NTL_MAX_LONG) 
-         Error("internal error: ZZ_pEContext ref_count overflow");
-
-      src->ref_count++;
-   }
-
-   dst = src;
-}
-   
-
+NTL_THREAD_LOCAL 
+SmartPtr<ZZ_pEInfoT> ZZ_pEInfo = 0; 
 
 
 void ZZ_pE::init(const ZZ_pX& p)
@@ -74,76 +45,42 @@ void ZZ_pE::init(const ZZ_pX& p)
 }
 
 
-ZZ_pEContext::ZZ_pEContext(const ZZ_pX& p)
-{
-   ptr = NTL_NEW_OP ZZ_pEInfoT(p);
-}
-
-ZZ_pEContext::ZZ_pEContext(const ZZ_pEContext& a)
-{
-   ptr = 0;
-   CopyPointer(ptr, a.ptr);
-}
-
-ZZ_pEContext& ZZ_pEContext::operator=(const ZZ_pEContext& a)
-{
-   CopyPointer(ptr, a.ptr);
-   return *this;
-}
-
-
-ZZ_pEContext::~ZZ_pEContext()
-{
-   CopyPointer(ptr, 0);
-}
-
 void ZZ_pEContext::save()
 {
-   CopyPointer(ptr, ZZ_pEInfo);
+   ptr = ZZ_pEInfo;
 }
 
 void ZZ_pEContext::restore() const
 {
-   CopyPointer(ZZ_pEInfo, ptr);
+   ZZ_pEInfo = ptr;
 }
-
 
 
 ZZ_pEBak::~ZZ_pEBak()
 {
-   if (MustRestore)
-      CopyPointer(ZZ_pEInfo, ptr);
-
-   CopyPointer(ptr, 0);
+   if (MustRestore) c.restore();
 }
 
 void ZZ_pEBak::save()
 {
-   MustRestore = 1;
-   CopyPointer(ptr, ZZ_pEInfo);
+   c.save();
+   MustRestore = true;
 }
-
 
 
 void ZZ_pEBak::restore()
 {
-   MustRestore = 0;
-   CopyPointer(ZZ_pEInfo, ptr);
+   c.restore();
+   MustRestore = false;
 }
-
 
 
 const ZZ_pE& ZZ_pE::zero()
 {
-   static ZZ_pE z(ZZ_pE_NoAlloc);
+   static ZZ_pE z(INIT_NO_ALLOC);
    return z;
 }
 
-
-ZZ_pE::ZZ_pE()
-{
-   _ZZ_pE__rep.rep.SetMaxLength(ZZ_pE::degree());
-}
 
 
 
@@ -151,7 +88,7 @@ istream& operator>>(istream& s, ZZ_pE& x)
 {
    ZZ_pX y;
 
-   s >> y;
+   NTL_INPUT_CHECK_RET(s, s >> y);
    conv(x, y);
 
    return s;

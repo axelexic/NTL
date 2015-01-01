@@ -12,6 +12,15 @@ NTL_OPEN_NNS
 
 template<class T> 
 class Mat {  
+private:
+
+   struct Fixer {
+      long m;
+
+      explicit Fixer(long _m) : m(_m) { }
+      void operator()(Vec<T>& v) { v.FixLength(m); }
+   };
+
 public:  
   
    // pseudo-private fields
@@ -62,6 +71,12 @@ public:
    long position1(const Vec<T>& a) const { return _mat__rep.position1(a); } 
    Mat(Mat<T>& x, INIT_TRANS_TYPE) :  
     _mat__rep(x._mat__rep, INIT_TRANS), _mat__numcols(x._mat__numcols) { }  
+
+   void swap(Mat& other)
+   {
+      _mat__rep.swap(other._mat__rep);
+      _ntl_swap(_mat__numcols, other._mat__numcols);
+   }
 };  
  
 template<class T> 
@@ -93,27 +108,31 @@ Mat<T>::Mat(INIT_SIZE_TYPE, long n, long m) : _mat__numcols(0)
 template<class T>
 void Mat<T>::kill()  
 {  
-   _mat__numcols = 0;  
-   _mat__rep.kill();  
+   Mat<T> tmp;
+   this->swap(tmp);
 }  
   
+
+// This is designed to provide strong ES
 template<class T>
 void Mat<T>::SetDims(long n, long m)  
 {  
    if (n < 0 || m < 0)  
-      Error("SetDims: bad args");  
+      LogicError("SetDims: bad args");  
+
+   long init = _mat__rep.MaxLength();  
+
+   if (init > 0 && m != _mat__numcols) {
+      Mat<T> tmp;
+      tmp._mat__rep.SetLengthAndApply(n, Fixer(m));
+      tmp._mat__numcols = m;
+      this->swap(tmp);
+   }
+   else {
+      _mat__rep.SetLengthAndApply(n, Fixer(m));
+      _mat__numcols = m;
+   }
   
-   if (m != _mat__numcols) {  
-      _mat__rep.kill();  
-      _mat__numcols = m;  
-   }  
-        
-   long oldmax = _mat__rep.MaxLength();  
-   long i;  
-   _mat__rep.SetLength(n);  
-  
-   for (i = oldmax; i < n; i++)  
-      _mat__rep[i].FixLength(m);  
 }  
      
         
@@ -132,7 +151,7 @@ void MakeMatrix(Mat<T>& x, const Vec< Vec<T> >& a)
   
    for (i = 1; i < n; i++)  
       if (a[i].length() != m)  
-         Error("nonrectangular matrix");  
+         LogicError("nonrectangular matrix");  
   
    x.SetDims(n, m);  
    for (i = 0; i < n; i++)  
@@ -142,8 +161,7 @@ void MakeMatrix(Mat<T>& x, const Vec< Vec<T> >& a)
 template<class T>
 void swap(Mat<T>& X, Mat<T>& Y)  
 {  
-   swap(X._mat__numcols, Y._mat__numcols);  
-   swap(X._mat__rep, Y._mat__rep);  
+   X.swap(Y);
 }  
   
 template<class T>
@@ -177,7 +195,7 @@ template<class T>
 NTL_SNS istream& operator>>(NTL_SNS istream& s, Mat<T>& x)  
 {  
    Vec< Vec<T> > buf;  
-   s >> buf;  
+   NTL_INPUT_CHECK_RET(s, s >> buf);  
    MakeMatrix(x, buf);  
    return s;  
 }  

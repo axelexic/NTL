@@ -31,7 +31,7 @@ int main()
    cout.setf(ios::scientific);
 
 
-   for (n = 32; n <= (1L << 18); n = n << 1) {
+   for (n = 32; n <= (1L << 18); n = n << 3) {
       random(a, n);
       random(b, n);
       OldGCD(c, a, b);

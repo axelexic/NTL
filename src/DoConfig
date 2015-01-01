@@ -12,19 +12,15 @@
 
 %MakeVal = (
 
-'CC'	      => 'clang',
-'CXX'	      => 'clang++',
-'CFLAGS'      => '-O2',
-'CXXFLAGS'    => '$(CFLAGS)',
+'CXX'	      => 'g++',
+'CXXFLAGS'    => '-g -O2',
 'AR'	      => 'ar',
 'ARFLAGS'     => 'ruv',
 'RANLIB'      => 'ranlib',
 'LIBTOOL'     => 'libtool',
 
 'LDFLAGS'     => '',
-'LDFLAGS_CXX' => '$(LDFLAGS)',
 'LDLIBS'      => '-lm',
-'LDLIBS_CXX'  => '$(LDLIBS)',
 'CPPFLAGS'    => '',
 
 'DEF_PREFIX'  => '/usr/local',
@@ -49,14 +45,12 @@
 
 %ConfigFlag = (
 
-'NTL_STD_CXX'           => 'on',
-'NTL_PSTD_NNS'          => 'off',
-'NTL_PSTD_NHF'          => 'off',
-'NTL_PSTD_NTN'          => 'off',
+'NTL_LEGACY_NO_NAMESPACE'  => 'off',
+'NTL_LEGACY_INPUT_ERROR'   => 'off',
+'NTL_THREADS'           => 'off',
+'NTL_EXCEPTIONS'        => 'off',
 'NTL_GMP_LIP'           => 'off',
-'NTL_GMP_HACK'          => 'off',
 'NTL_GF2X_LIB'          => 'off',
-'NTL_CXX_ONLY'          => 'off',
 'NTL_X86_FIX'           => 'off',
 'NTL_NO_X86_FIX'        => 'off',
 'NTL_AVOID_FLOAT'       => 'off',
@@ -66,6 +60,7 @@
 'NTL_SPMM_ASM'          => 'off',
 'NTL_AVOID_BRANCHING'   => 'off',
 'NTL_TBL_REM'           => 'off',
+'NTL_TBL_REM_LL'        => 'off',
 'NTL_GF2X_NOINLINE'     => 'off',
 'NTL_GF2X_ALTCODE'      => 'off',
 'NTL_GF2X_ALTCODE1'     => 'off',
@@ -92,7 +87,7 @@
 
 foreach $arg (@ARGV) {
 
-   if ($arg =~ '-h|help|-help|--help') {
+   if ($arg =~ '^(-h|help|-help|--help)$') {
       system("more ../doc/config.txt");
       exit;
    }
@@ -121,6 +116,20 @@ foreach $arg (@ARGV) {
 
    die "Error: unrecognized option: $arg\ntype \"./configure -h\" for help\n";
 
+}
+
+# special processing for NTL_THREADS: if this is set, we override
+# the default setting for CXXFLAGS
+
+if ($ConfigFlag{'NTL_THREADS'} eq 'on' && !exists($Variable{'CXXFLAGS'})) {
+   $MakeVal{'CXXFLAGS'} = $MakeVal{'CXXFLAGS'} . ' -std=c++11 -pthread';
+}
+
+# special processing for NTL_EXCEPTIONS: similar to processing
+# for NTL_THREADS
+
+if ($ConfigFlag{'NTL_EXCEPTIONS'} eq 'on' && $ConfigFlag{'NTL_THREADS'} eq 'off' && !exists($Variable{'CXXFLAGS'})) {
+   $MakeVal{'CXXFLAGS'} = $MakeVal{'CXXFLAGS'} . ' -std=c++11';
 }
 
 # some special MakeVal values that are determined by SHARED

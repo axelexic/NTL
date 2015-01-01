@@ -21,6 +21,9 @@ public:
    zz_pEX(); // initial value 0
 
    zz_pEX(const zz_pEX& a); // copy
+   zz_pEX(const zz_pE& a); // promotion
+   zz_pEX(const zz_p& a); 
+   zz_pEX(long a); 
 
    zz_pEX& operator=(const zz_pEX& a); // assignment
    zz_pEX& operator=(const zz_pE& a);
@@ -29,12 +32,17 @@ public:
 
    ~zz_pEX(); // destructor
 
-   zz_pEX(long i, const zz_pE& c); // initilaize to X^i*c
-   zz_pEX(long i, const zz_p& c); 
-   zz_pEX(long i, long c); 
+   zz_pEX(INIT_MONO_TYPE, long i, const zz_pE& c); 
+   zz_pEX(INIT_MONO_TYPE, long i, const zz_p& c); 
+   zz_pEX(INIT_MONO_TYPE, long i, long c); 
+   // initilaize to c*X^i; invoke as zz_pEX(INIT_MONO, i, c)
 
+   zz_pEX(INIT_MONO_TYPE, long i); 
+   // initilaize to X^i; invoke as zz_pEX(INIT_MONO, i)
 
+   // typedefs to aid in generic programming
    typedef zz_pE coeff_type;
+   typedef zz_pEXModulus modulus_type;
 
    // ...
 
@@ -865,6 +873,12 @@ zz_pEX::zz_pEX(INIT_SIZE_TYPE, long n);
 static const zz_pEX& zero();
 // zz_pEX::zero() is a read-only reference to 0
 
+void zz_pEX::swap(zz_pEX& x);
 void swap(zz_pEX& x, zz_pEX& y); 
-// swap x and y (via "pointer swapping")
+// swap (via "pointer swapping")
 
+
+zz_pEX::zz_pEX(long i, const zz_pE& c); 
+zz_pEX::zz_pEX(long i, const zz_p& c); 
+zz_pEX::zz_pEX(long i, long c); 
+// initilaize to c*X^i; provided for backward compatibility

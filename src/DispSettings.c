@@ -1,12 +1,8 @@
 
 #include <NTL/ctools.h>
 
-#if (defined(NTL_STD_CXX) || defined(NTL_PSTD_NHF))
 #include <iostream>
 using namespace std;
-#else
-#include <iostream.h>
-#endif
 
 
 #define make_string_aux(x) #x
@@ -20,29 +16,29 @@ int main()
    cout << "Basic Configuration Options:\n";
 
 
-#ifdef NTL_STD_CXX
-   cout << "NTL_STD_CXX\n";
+#ifdef NTL_LEGACY_NO_NAMESPACE
+   cout << "NTL_LEGACY_NO_NAMESPACE\n";
 #endif
 
-#ifdef NTL_PSTD_NNS
-   cout << "NTL_PSTD_NNS\n";
+
+#ifdef NTL_LEGACY_INPUT_ERROR
+   cout << "NTL_LEGACY_INPUT_ERROR\n";
 #endif
 
-#ifdef NTL_PSTD_NHF
-   cout << "NTL_PSTD_NHF\n";
+
+#ifdef NTL_THREADS
+   cout << "NTL_THREADS\n";
 #endif
 
-#ifdef NTL_PSTD_NTN
-   cout << "NTL_PSTD_NTN\n";
+#ifdef NTL_EXCEPTIONS
+   cout << "NTL_EXCEPTIONS\n";
 #endif
+
 
 #ifdef NTL_GMP_LIP
    cout << "NTL_GMP_LIP\n";
 #endif
 
-#ifdef NTL_GMP_HACK
-   cout << "NTL_GMP_HACK\n";
-#endif
 
 #ifdef NTL_GF2X_LIB
    cout << "NTL_GF2X_LIB\n";
@@ -56,10 +52,6 @@ int main()
 #ifdef NTL_UNSIGNED_LONG_LONG_TYPE
    cout << "NTL_UNSIGNED_LONG_LONG_TYPE: ";
    cout << make_string(NTL_UNSIGNED_LONG_LONG_TYPE) << "\n";
-#endif
-
-#ifdef NTL_CXX_ONLY
-   cout << "NTL_CXX_ONLY\n";
 #endif
 
 
@@ -135,6 +127,10 @@ cout << "Performance Options:\n";
 
 #ifdef NTL_TBL_REM
    cout << "NTL_TBL_REM\n";
+#endif
+
+#ifdef NTL_TBL_REM_LL
+   cout << "NTL_TBL_REM_LL\n";
 #endif
 
 

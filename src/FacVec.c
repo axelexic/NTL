@@ -34,10 +34,10 @@ void FindMin(FacVec& v, long lo, long hi)
 
 void FactorInt(FacVec& fvec, long n)
 {
-   if (n <= 1) Error("internal error: FactorInt(FacVec,long n) with n<=1");
+   if (n <= 1) LogicError("internal error: FactorInt(FacVec,long n) with n<=1");
 
    if (NTL_OVERFLOW(n, 1, 0))
-      Error("internal error: FactorInt(FacVec,long n) with n too large");
+      ResourceError("internal error: FactorInt(FacVec,long n) with n too large");
 
    long NumFactors;
    long q;

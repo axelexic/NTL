@@ -7,7 +7,7 @@
 #include <NTL/new.h>
 
 
-void _ntl_abort_cxx_callback(void)
+void _ntl_abort_cxx_callback()
 {
    if (NTL_NNS ErrorCallback) (*NTL_NNS ErrorCallback)();
 }
@@ -15,10 +15,10 @@ void _ntl_abort_cxx_callback(void)
 
 NTL_START_IMPL
 
-void (*ErrorCallback)() = 0;
+NTL_THREAD_LOCAL void (*ErrorCallback)() = 0;
 
 
-void Error(const char *s)
+void TerminalError(const char *s)
 {
    cerr << s << "\n";
    _ntl_abort();
@@ -82,7 +82,7 @@ char IntValToChar(long a)
       case 14: return 'e';
       case 15: return 'f';
 
-      default: Error("IntValToChar: bad arg");
+      default: LogicError("IntValToChar: bad arg");
    }
 
    return 0;  // to supress warnings

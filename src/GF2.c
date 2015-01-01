@@ -13,7 +13,7 @@ GF2 power(GF2 a, long e)
    }
 
    if (e < 0 && IsZero(a)) 
-      Error("GF2: division by zero");
+      ArithmeticError("GF2: division by zero");
 
    return a;
 }
@@ -30,9 +30,10 @@ ostream& operator<<(ostream& s, GF2 a)
 
 istream& operator>>(istream& s, ref_GF2 x)
 {
-   static ZZ a;
+   NTL_ZZRegister(a);
 
-   s >> a;
+   NTL_INPUT_CHECK_RET(s, s >> a);
+
    conv(x, a);
    return s;
 }

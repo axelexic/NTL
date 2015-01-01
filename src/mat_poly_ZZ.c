@@ -38,7 +38,7 @@ void CharPoly(ZZX& gg, const mat_ZZ& a, long deterministic)
 {
    long n = a.NumRows();
    if (a.NumCols() != n)
-      Error("CharPoly: nonsquare matrix");
+      LogicError("CharPoly: nonsquare matrix");
 
    if (n == 0) {
       set(gg);

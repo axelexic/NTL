@@ -3,12 +3,17 @@
 #define NTL_zz_pEX__H
 
 #include <NTL/vec_lzz_pE.h>
+#include <NTL/Lazy.h>
 
 NTL_OPEN_NNS
 
-class zz_pEX {
+class zz_pEXModulus; // forward declaration
 
+class zz_pEX {
 public:
+typedef zz_pE coeff_type;
+typedef zz_pEXModulus modulus_type;
+
 
 vec_zz_pE rep;
 
@@ -20,11 +25,13 @@ vec_zz_pE rep;
 ****************************************************************/
 
 
-zz_pEX()
+zz_pEX() { }
 //  initial value 0
 
-   { }
 
+explicit zz_pEX(long a) { *this = a; }
+explicit zz_pEX(const zz_p& a) { *this = a; }
+explicit zz_pEX(const zz_pE& a) { *this = a; }
 
 zz_pEX(INIT_SIZE_TYPE, long n) { rep.SetMaxLength(n); }
 
@@ -45,9 +52,10 @@ void kill()
 
    { rep.kill(); }
 
+void swap(zz_pEX& x) { rep.swap(x.rep); }
 
 
-typedef zz_pE coeff_type;
+
 void SetLength(long n) { rep.SetLength(n); }
 zz_pE& operator[](long i) { return rep[i]; }
 const zz_pE& operator[](long i) const { return rep[i]; }
@@ -60,6 +68,11 @@ static const zz_pEX& zero();
 inline zz_pEX(long i, const zz_pE& c);
 inline zz_pEX(long i, const zz_p& c);
 inline zz_pEX(long i, long c);
+
+inline zz_pEX(INIT_MONO_TYPE, long i, const zz_pE& c);
+inline zz_pEX(INIT_MONO_TYPE, long i, const zz_p& c);
+inline zz_pEX(INIT_MONO_TYPE, long i, long c);
+inline zz_pEX(INIT_MONO_TYPE, long i);
 
 
 inline zz_pEX& operator=(long a);
@@ -103,17 +116,17 @@ void SetCoeff(zz_pEX& x, long i, const zz_p& a);
 void SetCoeff(zz_pEX& x, long i, long a);
 // x[i] = a, error is raised if i < 0
 
-inline zz_pEX::zz_pEX(long i, const zz_pE& a)
-   { SetCoeff(*this, i, a); }
-
-inline zz_pEX::zz_pEX(long i, const zz_p& a)
-   { SetCoeff(*this, i, a); }
-
-inline zz_pEX::zz_pEX(long i, long a)
-   { SetCoeff(*this, i, a); }
-
 void SetCoeff(zz_pEX& x, long i);
 // x[i] = 1, error is raised if i < 0
+
+inline zz_pEX::zz_pEX(long i, const zz_pE& a) { SetCoeff(*this, i, a); }
+inline zz_pEX::zz_pEX(long i, const zz_p& a) { SetCoeff(*this, i, a); }
+inline zz_pEX::zz_pEX(long i, long a) { SetCoeff(*this, i, a); }
+
+inline zz_pEX::zz_pEX(INIT_MONO_TYPE, long i, const zz_pE& a) { SetCoeff(*this, i, a); }
+inline zz_pEX::zz_pEX(INIT_MONO_TYPE, long i, const zz_p& a) { SetCoeff(*this, i, a); }
+inline zz_pEX::zz_pEX(INIT_MONO_TYPE, long i, long a) { SetCoeff(*this, i, a); }
+inline zz_pEX::zz_pEX(INIT_MONO_TYPE, long i) { SetCoeff(*this, i); }
 
 void SetX(zz_pEX& x);
 // x is set to the monomial X
@@ -134,7 +147,7 @@ inline void set(zz_pEX& x)
 inline void swap(zz_pEX& x, zz_pEX& y)
 // swap x & y (only pointers are swapped)
 
-   { swap(x.rep, y.rep); }
+   { x.swap(y); }
 
 void random(zz_pEX& x, long n);
 inline zz_pEX random_zz_pEX(long n)
@@ -657,7 +670,8 @@ public:
    zz_pE hlc;
    zz_pEX f0;
 
-   vec_zz_pE tracevec; // mutable
+   OptionalVal< Lazy<vec_zz_pE> > tracevec; 
+   // extra level of indirection to ensure relocatability
 
 }; 
 
@@ -829,7 +843,7 @@ struct zz_pEXArgument {
    vec_zz_pEX H;
 };
 
-extern long zz_pEXArgBound;
+NTL_THREAD_LOCAL extern long zz_pEXArgBound;
 
 
 void build(zz_pEXArgument& H, const zz_pEX& h, const zz_pEXModulus& F, long m);

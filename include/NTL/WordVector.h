@@ -29,7 +29,7 @@ NTL_OPEN_NNS
 #ifndef NTL_RANGE_CHECK
 #define NTL_WV_RANGE_CHECK_CODE 
 #else
-#define NTL_WV_RANGE_CHECK_CODE if (i < 0 || !rep || i >= long(rep[-1])) RangeError(i);
+#define NTL_WV_RANGE_CHECK_CODE if (i < 0 || !rep || i >= long(rep[-1])) LogicError("index out of range in WordVector");
 #endif
 
 // vectors are allocated in chunks of this size
@@ -50,16 +50,10 @@ NTL_OPEN_NNS
 #define NTL_WordVectorInputBlock 50
 #endif
 
-// controls release functionality
-
-#define NTL_RELEASE_THRESH (10000)
-// #define NTL_RELEASE_THRESH (0)
-
 
 class WordVector {  
 public:  
    _ntl_ulong *rep;  
-   void RangeError(long i) const;  
 
    WordVector(WordVector& x, INIT_TRANS_TYPE) { rep = x.rep; x.rep = 0; }
 
@@ -74,7 +68,7 @@ public:
    ~WordVector();  
    void kill(); 
 
-   void release() { if (MaxLength() > NTL_RELEASE_THRESH) kill(); }
+   void KillBig() { if (MaxLength() > NTL_RELEASE_THRESH) kill(); }
    // this conditinally kills the vector, if its size is excessive
 
    void DoSetLength(long n);
@@ -116,19 +110,32 @@ public:
    const _ntl_ulong* elts() const { return rep; }  
    _ntl_ulong* elts() { return rep; }  
          
-   static void swap_impl(WordVector& x, WordVector& y);  
-   static void append_impl(WordVector& v, _ntl_ulong a); 
-   static void append_impl(WordVector& v, const WordVector& w); 
+   void swap(WordVector& y);  
+   void append(_ntl_ulong a); 
+   void append(const WordVector& w); 
 }; 
 
+
+
+
+class WordVectorWatcher {
+public:
+   WordVector& watched;
+   explicit
+   WordVectorWatcher(WordVector& _watched) : watched(_watched) {}
+
+   ~WordVectorWatcher() { watched.KillBig(); }
+};
+
+
 inline void swap(WordVector& x, WordVector& y) 
-   { WordVector::swap_impl(x, y); }
+   { x.swap(y); }
 
 inline void append(WordVector& v, _ntl_ulong a)
-   { WordVector::append_impl(v, a); }
+   { v.append(a); }
 
 inline void append(WordVector& v, const WordVector& w)
-   { WordVector::append_impl(v, w); }
+   { v.append(w); }
 
 
 NTL_SNS istream& operator>>(NTL_SNS istream&, WordVector&);  

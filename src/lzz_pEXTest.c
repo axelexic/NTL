@@ -22,17 +22,17 @@ int main()
 
    g = MinPolyMod(h, f);
 
-   if (deg(g) < 0) Error("bad zz_pEXTest (1)");
+   if (deg(g) < 0) TerminalError("bad zz_pEXTest (1)");
    if (CompMod(g, h, f) != 0)
-      Error("bad zz_pEXTest (2)");
+      TerminalError("bad zz_pEXTest (2)");
 
 
    
    vec_pair_zz_pEX_long v;
 
-   long i;
-   for (i = 0; i < 5; i++) {
-      long n = RandomBnd(20)+1;
+   long j;
+   for (j = 0; j < 5; j++) {
+      long n = RandomBnd(40)+10;
       cerr << n << " ";
 
       random(f, n);
@@ -46,7 +46,7 @@ int main()
       long i;
       for (i = 0; i < v.length(); i++)
          if (!DetIrredTest(v[i].a))
-            Error("bad zz_pEXTest (3)");
+            TerminalError("bad zz_pEXTest (3)");
 
 
    }

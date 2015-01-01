@@ -13,11 +13,11 @@ void WordVector::DoSetLength(long n)
    long m;  
   
    if (n < 0) {  
-      Error("negative length in vector::SetLength");  
+      LogicError("negative length in vector::SetLength");  
    }  
 
    if (NTL_OVERFLOW(n, NTL_BITS_PER_LONG, 0)) 
-      Error("length too big in vector::SetLength");
+      ResourceError("length too big in vector::SetLength");
       
    if (n == 0) {  
       if (rep) rep[-1] = 0;  
@@ -28,14 +28,15 @@ void WordVector::DoSetLength(long n)
       m = ((n+NTL_WordVectorMinAlloc-1)/NTL_WordVectorMinAlloc) * NTL_WordVectorMinAlloc; 
 
       if (NTL_OVERFLOW(m, NTL_BITS_PER_LONG, 0))
-         Error("length too big in vector::SetLength");
+         ResourceError("length too big in vector::SetLength");
 
       _ntl_ulong *p = (_ntl_ulong *) 
                       NTL_MALLOC(m, sizeof(_ntl_ulong), 2*sizeof(_ntl_ulong));
 
       if (!p) {  
-	 Error("out of memory in SetLength()");  
+	 MemoryError();  
       }  
+
       rep = p+2;
 
       rep[-1] = n;
@@ -53,7 +54,7 @@ void WordVector::DoSetLength(long n)
 
    long frozen = (rep[-2] & 1);
 
-   if (frozen) Error("Cannot grow this WordVector");
+   if (frozen) LogicError("Cannot grow this WordVector");
       
    m = max(n, long(NTL_WordVectorExpansionRatio*max_length));
 
@@ -61,13 +62,15 @@ void WordVector::DoSetLength(long n)
    _ntl_ulong *p = rep - 2;
 
    if (NTL_OVERFLOW(m, NTL_BITS_PER_LONG, 0))
-      Error("length too big in vector::SetLength");
+      ResourceError("length too big in vector::SetLength");
 
    p = (_ntl_ulong *) 
        NTL_REALLOC(p, m, sizeof(_ntl_ulong), 2*sizeof(_ntl_ulong)); 
+
    if (!p) {  
-      Error("out of memory in SetLength()");  
+      MemoryError();  
    }  
+
    rep = p+2;
 
    rep[-1] = n;
@@ -97,7 +100,6 @@ WordVector& WordVector::operator=(const WordVector& a)
    SetLength(n);  
    p = elts();  
   
-  
    for (i = 0; i < n; i++)  
       p[i] = ap[i];  
 
@@ -108,67 +110,63 @@ WordVector& WordVector::operator=(const WordVector& a)
 WordVector::~WordVector()  
 {  
    if (!rep) return;  
-   if (rep[-2] & 1) Error("Cannot free this WordVector");
+   if (rep[-2] & 1) TerminalError("Cannot free this WordVector");
    free(rep-2);
 }  
    
 void WordVector::kill()  
 {  
    if (!rep) return;  
-   if (rep[-2] & 1) 
-      Error("Cannot free this WordVector");
+   if (rep[-2] & 1) LogicError("Cannot free this WordVector");
    free(rep-2);
    rep = 0; 
 }  
   
-void WordVector::RangeError(long i) const  
-{  
-   cerr << "index out of range in vector: ";  
-   cerr << i;  
-   if (!rep)  
-      cerr << "(0)";  
-   else  
-      cerr << "(" << rep[-1] << ")";  
-   Error("");  
-}  
-
 void CopySwap(WordVector& x, WordVector& y)
 {
-   static WordVector t;
+   NTL_THREAD_LOCAL static WordVector t;
+   WordVectorWatcher watch_t(t);
+
+   long sz_x = x.length();
+   long sz_y = y.length();
+   long sz = (sz_x > sz_y) ? sz_x : sz_y;
+
+   x.SetMaxLength(sz);
+   y.SetMaxLength(sz);
+
+   // EXCEPTIONS: all of the above ensures that swap provides strong ES
+
    t = x;
    x = y;
    y = t;
 }
  
-void WordVector::swap_impl(WordVector& x, WordVector& y)  
+void WordVector::swap(WordVector& y)  
 {  
-   if ((x.rep && (x.rep[-2] & 1)) ||
+   if ((this->rep && (this->rep[-2] & 1)) ||
        (y.rep && (y.rep[-2] & 1))) {
-      CopySwap(x, y);
+      CopySwap(*this, y);
       return;
    }
 
-   _ntl_ulong* t;  
-   t = x.rep;  
-   x.rep = y.rep;  
-   y.rep = t;  
+   _ntl_swap(this->rep, y.rep);
 } 
  
-void WordVector::append_impl(WordVector& v, _ntl_ulong a)  
+void WordVector::append(_ntl_ulong a)  
 {  
-   long l = v.length();
-   v.SetLength(l+1);  
-   v[l] = a;  
+   long l = this->length();
+   this->SetLength(l+1);  
+   (*this)[l] = a;  
 }  
   
-void WordVector::append_impl(WordVector& v, const WordVector& w)  
+void WordVector::append(const WordVector& w)  
 {  
-   long l = v.length();  
+   long l = this->length();  
    long m = w.length();  
    long i;  
-   v.SetLength(l+m);  
+   this->SetLength(l+m);  
    for (i = 0; i < m; i++)  
-      v[l+i] = w[i];  
+      (*this)[l+i] = w[i];  
 }
 
 
@@ -177,7 +175,7 @@ istream & operator>>(istream& s, WordVector& a)
    WordVector ibuf;  
    long c;   
    long n;   
-   if (!s) Error("bad vector input"); 
+   if (!s) NTL_INPUT_ERROR(s, "bad vector input"); 
    
    c = s.peek();  
    while (IsWhiteSpace(c)) {  
@@ -185,7 +183,7 @@ istream & operator>>(istream& s, WordVector& a)
       c = s.peek();  
    }  
    if (c != '[') {  
-      Error("bad vector input");  
+      NTL_INPUT_ERROR(s, "bad vector input");  
    }  
  
    n = 0;   
@@ -201,14 +199,14 @@ istream & operator>>(istream& s, WordVector& a)
       if (n % NTL_WordVectorInputBlock == 0) ibuf.SetMaxLength(n + NTL_WordVectorInputBlock); 
       n++;   
       ibuf.SetLength(n);   
-      if (!(s >> ibuf[n-1])) Error("bad vector input");   
+      if (!(s >> ibuf[n-1])) NTL_INPUT_ERROR(s, "bad vector input");   
       c = s.peek();  
       while (IsWhiteSpace(c)) {  
          s.get();  
          c = s.peek();  
       }  
    }   
-   if (c == EOF) Error("bad vector input");  
+   if (c == EOF) NTL_INPUT_ERROR(s, "bad vector input");  
    s.get(); 
    
    a = ibuf; 
@@ -329,16 +327,16 @@ long WV_BlockConstructAlloc(WordVector& x, long d, long n)
    /* check n value */
 
    if (n <= 0)
-      Error("block construct: n must be positive");
+      LogicError("block construct: n must be positive");
 
    /* check d value */
 
    if (d <= 0) 
-      Error("block construct: d must be positive");
+      LogicError("block construct: d must be positive");
 
    if (NTL_OVERFLOW(d, NTL_BITS_PER_LONG, 0) || 
        NTL_OVERFLOW(d, sizeof(_ntl_ulong), 2*sizeof(_ntl_ulong)))
-      Error("block construct: d too large");
+      ResourceError("block construct: d too large");
 
    nwords = d + 2;
    nbytes = nwords*sizeof(_ntl_ulong);
@@ -352,7 +350,7 @@ long WV_BlockConstructAlloc(WordVector& x, long d, long n)
       m = n;
 
    p = (_ntl_ulong *) NTL_MALLOC(m, nbytes, sizeof(_ntl_ulong));
-   if (!p) Error("out of memory in block construct");
+   if (!p) MemoryError();
 
    *p = m;
 

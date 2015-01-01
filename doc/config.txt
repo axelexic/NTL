@@ -17,16 +17,15 @@ correct for your platform, you have to set an appropriate variable.
 
 ########### Here are the most important variables, and their default values.
 
-CC=gcc               # The C compiler
 CXX=g++              # The C++ compiler
-CFLAGS=-O2           # C complilation flags
-CXXFLAGS=$(CFLAGS)   # C++ compilation flags (by default, same as CFLAGS)
+CXXFLAGS=-g -O2      # C++ complilation flags
 
 DEF_PREFIX=/usr/local # Default software directory
 PREFIX=$(DEF_PREFIX) # Directory in which to install NTL library components
 SHARED=off           # Generate a shared library (as well as static)
 
-NTL_STD_CXX=on       # ISO Mode switch
+NTL_THREADS=off      # compile in thread-safe mode
+NTL_EXCEPTIONS=off   # compile in thread-safe mode
 
 NTL_GMP_LIP=off      # Switch to enable the use of GMP as primary 
                      #   long integer package
@@ -43,16 +42,6 @@ GF2X_PREFIX=$(DEF_PREFIX) # Directory in which gf2x components are installed
 
 ########## Basic compilation variables:
 
-CC=gcc
-
-# A C or C++ compiler, e. g., gcc, cc, xlc.
-# There are a few components written in C which may be compiled
-# under C++, but C compilers tend to generate slightly better code.
-# The C++ and C compilers (if different) must generate
-# compatible code.
-
-
-
 CXX=g++
 
 # A C++ compiler, e.g., g++, CC, xlC
@@ -62,26 +51,14 @@ CXX=g++
 
 
 
-CFLAGS=-O2
+CXXFLAGS=-g -O2
 
-# Flags for the C compiler
-# Some useful flags:
-#   -O2   --  recommended level of optimization
-#   -g    --  debugging
-#   -mcpu=v8  --  needed with gcc/g++ to get the full instruction set
-#                 of a SparcStation
-#   -qarch=ppc  -- needed with xlc/C to get the full instruction set
-#                  of a PowerPC
-
-
-
-CXXFLAGS=$(CFLAGS)
-
-# Flags for the C++ compiler (usually the same as CFLAGS)
-# Some useful flags:
-#   -+  -- needed with xlC to make it treat .c files as C++ files
-
-
+# Flags for the C++ compiler
+# 
+# Note that if CXXFLAGS has not been explicitly set,
+# then the option -std=c++11 is added if either NTL_THREADS
+# or NTL_EXCEPTIONS is set, and the option -pthread is added
+# if NTL_THREADS is set.
 
 
 ########## Installation path:
@@ -124,25 +101,24 @@ SHARED=off
 # features specific to GNU make.
 
 
+########## thread safety
 
-########## ISO mode switch:
+NTL_THREADS=off
 
-NTL_STD_CXX=on
+# Set to 'on' if you want to compile NTL in thread-safe mode.
+# This requires several C++11 features, including atomic types,
+# mutexes, and thread_local storage.  Your compiler may not
+# yet support these features.
 
-# Set to 'off' if you do not want to use the "Standard C++" version of NTL.
-# In this version, all of NTL is "wrapped" inside the namespace NTL,
-# and are no longer directly accessible---you must either use
-# explicit qualification, or using directives, or using declarations.
-# However, note that all names that begin with "NTL_" are macros,
-# and as such do not belong to any namespace.
-# Additionally, instead of including the traditional headers
-# <stdlib.h>, <math.h>, and <iostream.h>, the standard headers
-# <cstdlib>, <cmath>, and <iostream> are included.
-# These "wrap" some (but not all) names in namespace std.
 
-# If your compiler is not yet up to date, but you want some
-# of the benefits of Standard C++, you might try the "partial Standard C++"
-# switches NTL_PSTD_NNS, NTL_PSTD_NHF, NTL_PSTD_NTN (see below).
+########## exceptions
+
+NTL_EXCEPTIONS=off
+
+# Set to 'on' if you want to compile NTL with exceptions enabled.
+# This requires several C++11 features, including lambdas
+# and the new rules for exception specifications.
+# Your compiler may not yet support these feautures.
 
 ########## GMP variables:
 
@@ -151,9 +127,7 @@ NTL_GMP_LIP=off
 # Set to 'on' if you want to use GMP, the GNU Multi-Precision package,
 # as the primary long integer package.
 # This will typically yield significantly faster long integer arithmetic 
-# compared to the traditional long integer package, and will yield somewhat
-# faster long integer arithmetic compared the traditinal package
-# supplemented by GMP (i.e., the NTL_GMP_HACK flag, see below).
+# compared to the traditional long integer package.
 
 # If you set this flag, please note the following.
 # If you have installed GMP in a standard "system" location, this is
@@ -211,9 +185,9 @@ GF2X_PREFIX=$(DEF_PREFIX)
 
 
 
-# If your C/C++ compilers are called cc/CC:
+# If your C++ compiler is called CC:
 
-   ./configure CC=cc CXX=CC
+   ./configure CXX=CC
 
 
 
@@ -229,10 +203,10 @@ GF2X_PREFIX=$(DEF_PREFIX)
 
 
 
-# If you want to use the options -g and -O for compiling C and C++,
+# If you want to use the options -g and -O for compiling C++,
 # just execute
 
-   ./configure "CFLAGS=-g -O"
+   ./configure "CXXFLAGS=-g -O"
 
 # Note the use of quotes to keep the argument in one piece.
 
@@ -258,9 +232,7 @@ AR=ar
 ARFLAGS=ruv
 RANLIB=ranlib
 LDFLAGS=
-LDFLAGS_CXX=$(LDFLAGS)
 LDLIBS=-lm
-LDLIBS_CXX=$(LDLIBS)
 CPPFLAGS=
 LIBTOOL=libtool
 
@@ -269,13 +241,11 @@ INCLUDEDIR=$(PREFIX)/include
 DOCDIR=$(PREFIX)/share/doc
 
 
-NTL_PSTD_NNS=off
-NTL_PSTD_NHF=off
-NTL_PSTD_NTN=off
+NTL_LEGACY_NO_NAMESPACE=off
+NTL_LEGACY_INPUT_ERROR=off
 
 NTL_LONG_LONG_TYPE=undefined
 NTL_UNSIGNED_LONG_LONG_TYPE=undefined
-NTL_CXX_ONLY=off
 NTL_CLEAN_INT=off
 NTL_CLEAN_PTR=off
 NTL_RANGE_CHECK=off
@@ -292,12 +262,12 @@ NTL_SPMM_ASM=off
 NTL_FFT_BIGTAB=off
 NTL_FFT_LAZYMUL=off
 NTL_TBL_REM=off
+NTL_TBL_REM_LL=off
 NTL_AVOID_BRANCHING=off
 NTL_GF2X_NOINLINE=off
 NTL_GF2X_ALTCODE=off
 NTL_GF2X_ALTCODE1=off
 
-NTL_GMP_HACK=off
 GMP_INCDIR=$(GMP_PREFIX)/include
 GMP_LIBDIR=$(GMP_PREFIX)/lib
 
@@ -336,19 +306,8 @@ LDFLAGS=
 
 
 
-LDFLAGS_CXX=$(LDFLAGS)
-
-# libraries for linking C programs
-
-
 
 LDLIBS=-lm
-
-# libraries for linking C programs
-
-
-
-LDLIBS_CXX=$(LDLIBS)
 
 # libraries for linking C++ programs
 
@@ -367,18 +326,12 @@ LIBTOOL=libtool
 ########### Details of the compilation process (when SHARED=off)
 
 
-# When a C file foo.c is compiled:
-   $(CC) -I../include $(CPPFLAGS) $(CFLAGS) -c foo.c
-
-# When a C file foo.c is compiled and linked:
-   $(CC) -I../include $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o foo foo.c $(LDLIBS)
-
 # When a C++ file foo.c is compiled:
    $(CXX) -I../include $(CPPFLAGS) $(CXXFLAGS) -c foo.c
 
 # When a C++ file foo.c is compiled and linked:
-   $(CXX) -I../include $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS_CXX) \ 
-      -o foo foo.c $(LDLIBS_CXX)
+   $(CXX) -I../include $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) \ 
+      -o foo foo.c $(LDLIBS)
 
 # When the library ntl.a is built
    $(AR) $(ARFLAGS) ntl.a [ object files ]...
@@ -399,27 +352,19 @@ DOCDIR=$(PREFIX)/share/doc
 
 
 
-########## Partial ISO modes
+########## Legacy switches
 
-NTL_PSTD_NNS=off 
+NTL_LEGACY_NO_NAMESPACE=off 
 
-# NTL namespace --  wraps NTL in a namespace
+# put NTL components in the global namespace
 
 
 
-NTL_PSTD_NHF=off
+NTL_LEGACY_INPUT_ERROR=off
  
-# new header files -- use <cstdlib>, etc., instead of <stdlib.h>, etc.  
+# abort on input errors, instead of just setting the
+# "fail bit" of the istream object
 
-
-
-NTL_PSTD_NTN=off 
-
-# nothrow new -- use the nothrow version of new.  
-
-# Any combination of these PSTD swtiches may be set -- setting them all
-# is equvalent to setting NTL_STD_CXX.  Make sure you also unset NTL_STD_CXX;
-# otherwise, they have no effect.
 
 
 ########### Basic Configuration Options:
@@ -452,22 +397,6 @@ NTL_UNSIGNED_LONG_LONG_TYPE=undefined
 # the type most suitable for your machine (based on compiler and
 # word size).
 
-
-
-
-
-NTL_CXX_ONLY=off
-
-# It is possible to compile everything using C++ only.
-# If you want to do this, CC and CXX should both be C++ compilers.
-# You may also want to set NTL_CXX_ONLY=on, which eliminates some
-# "C" linkage that is no longer necessary.
-# However, it should still work without it.
-# 
-# This flag can be set independently of NTL_STD_CXX.
-# All functions that may have "C" linkage are never wrapped in
-# namespace NTL;  instead, their names always start with "_ntl_",
-# and as such, they should not conflict with other global names.
 
 
 
@@ -609,6 +538,10 @@ NTL_TBL_REM=off
 # ZZ_pX multiplication routines.  If you use the NTL_AVOID_FLOAT
 # or NTL_LONG_LONG flags, then you should probably use this one too.
 
+NTL_TBL_REM_LL=off
+
+# Forces the LONG_LONG implementation of NTL_TBL_REM.
+
 
 
 
@@ -650,19 +583,6 @@ NTL_GF2X_ALTCODE1=off
 
 ########## More GMP Options:
 
-
-NTL_GMP_HACK=off
-
-# Set to 'on' if you want to use GMP, the GNU Multi-Precision package,
-# as a supplemental long integer package.
-# This will typically yield significantly faster long integer arithmetic 
-# compared  to the traditional long integer package, while still maintaining
-# complete backward compataibility with code that uses the traditional
-# long integer package.  However, this flag is mainly for
-# enabling backward compatibility, and you are much better off
-# using the NTL_GMP_LIP flag.  
-
-# If you set this flag, you may have to set GMP_PREFIX as well. 
 
 GMP_INCDIR=$(GMP_PREFIX)/include
 # directory containing gmp.h

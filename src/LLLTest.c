@@ -47,9 +47,9 @@ int main()
    s = LLL_FP(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
    B = B0;
    cerr << "LLL_QP...";
@@ -57,9 +57,9 @@ int main()
    s = LLL_QP(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
 
    B = B0;
@@ -68,9 +68,9 @@ int main()
    s = LLL_XD(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
    B = B0;
    cerr << "LLL_RR...";
@@ -78,9 +78,9 @@ int main()
    s = LLL_RR(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
    B = B0;
    cerr << "G_LLL_FP...";
@@ -88,9 +88,9 @@ int main()
    s = G_LLL_FP(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
    B = B0;
    cerr << "G_LLL_QP...";
@@ -98,9 +98,9 @@ int main()
    s = G_LLL_QP(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
    B = B0;
    cerr << "G_LLL_XD...";
@@ -108,9 +108,9 @@ int main()
    s = G_LLL_XD(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
    B = B0;
    cerr << "G_LLL_RR...";
@@ -118,9 +118,9 @@ int main()
    s = G_LLL_RR(B, U, 0.99);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
    LLL(d, B, 90, 100);
-   if (B1 != B) Error("bad LLLTest (2)");
+   if (B1 != B) TerminalError("bad LLLTest (2)");
 
 
    B = B0;
@@ -129,7 +129,7 @@ int main()
    s = LLL(d, B, U);
    cerr << (GetTime()-t) << "\n";
    mul(B1, U, B0);
-   if (B1 != B) Error("bad LLLTest (1)");
+   if (B1 != B) TerminalError("bad LLLTest (1)");
 
    cout << "rank = " << s << "\n";
    cout << "det = " << d << "\n";

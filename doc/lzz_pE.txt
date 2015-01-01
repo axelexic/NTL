@@ -14,12 +14,11 @@ not be prime either.
 Objects of the class zz_pE are represented as a zz_pX of degree < deg(P).
 
 An executing program maintains a "current modulus", which is set to P
-using zz_pE::init(P).  The current modulus *must* be initialized before
-any zz_pE constructors are invoked.
+using zz_pE::init(P).  The current modulus for zz_pE (as well as for zz_p)
+*must* be initialized before an operations on zz_pE's are performed.
 
 The modulus may be changed, and a mechanism is provided for saving and
-restoring a modulus (see classes zz_pEBak and zz_pEContext below).
-
+restoring a modulus (see classes zz_pEPush and zz_pEContext below).
 
 \**************************************************************************/
 
@@ -31,6 +30,8 @@ public:
    zz_pE(); // initial value 0
 
    zz_pE(const zz_pE& a); // copy constructor
+   explicit zz_pE(const zz_p& a); // promotion 
+   explicit zz_pE(long a); // promotion 
    
    zz_pE& operator=(const zz_pE& a); // assignment
    zz_pE& operator=(const zz_p& a); // assignment
@@ -47,6 +48,14 @@ public:
 
    static long degree();
    // zz_pE::degree() returns deg(P)
+
+   // typedefs to aid generic programming
+   typedef zz_pX rep_type;
+   typedef zz_pEContext context_type;
+   typedef zz_pEBak bak_type;
+   typedef zz_pEPush push_type;
+   typedef zz_pEX poly_type;
+
 };
 
 
@@ -222,61 +231,119 @@ istream& operator>>(istream& s, zz_pE& x);
 
                        Modulus Switching 
 
-A class zz_pEBak is provided for "backing up" the current modulus.
+A class zz_pEPush is provided for "backing up" the current modulus
+and installing a new one.
 
 Here is what you do to save the current modulus, temporarily
-set it to something new, and then restore it:
+set it to P, and automatically restore it:
 
-   zz_pEBak bak;
-   bak.save();   // save current modulus (if any)
+   { 
+      zz_pEPush push(P); 
 
-   zz_pE::init(P);  // set modulus to desired value P
+      ...
 
-      // ...
+   }
 
-   bak.restore(); // restore old modulus (if any)
+The constructor for push will save the current modulus, and install P as the
+current modulus.  The destructor for push will restore the old modulus when the
+scope enclosing it exits.  This is the so-called RAII (resource acquisition is
+initialization) paradigm.
 
-Note that between the save and restore, you may have several calls to
-zz_pE::init, each of which simply clobbers the previous modulus.
+You could also do the following:
 
-The zz_pEBak interface is good for implementing simple stack-like
+   {
+      zz_pEPush push; // just backup current modulus
+
+        ...
+
+      zz_pE::init(P1); // install P1 
+
+        ...
+
+      zz_pE::init(P2); // install P2
+
+      // reinstall original modulus as close of scope
+   }
+
+      
+The zz_pEPush interface is good for implementing simple stack-like
 modulus "context switching".  For more general context switching,
-see zz_pEContext below.
+see zz_pEContext below.  There is also an older zz_pEBak class
+that may also be useful.
 
 ..........................................................................
 
-When the current modulus is changed, there may be extant
-zz_pE objects. If the old modulus was saved and then later restored, 
-these objects can be used again as if the modulus had never changed.  
-Note, however, that if a zz_pE object is created under one modulus 
-and then used in any way (except destroyed) under another, 
-program behavior is not predictable.  This condition is not
-explicitly checked for, but an error is likely to be raised.
-One should also not presume that things will work properly
-if the modulus is changed, but its value happens to be the same---
-one should restore the same "context", from either a zz_pEBak
-or a zz_pEContext object.  This is anyway more efficient.
+It is critical that zz_pE objects created under one zz_pE modulus are not used in
+any non-trivial way "out of context", i.e., under a different (or undefined)
+zz_pE modulus.  However, for ease-of-use, some operations may be safely
+performed out of context.  These safe operations include: the default and copy
+constructor, the destructor, and the assignment operator.  In addition is is
+generally safe to read any zz_pE object out of context (i.e., printing it out, or
+fetching its underlying representive using the rep() function).
+
+Any unsafe uses out of context are not in general checked, and may 
+lead to unpredictable behavior.
+
 
 \**************************************************************************/
 
 
+// A convenient interface for common cases
+
+class zz_pEPush {
+
+public:
+zz_pEPush();  // backup current modulus
+explicit zz_pEPush(const zz_pX& p); 
+explicit zz_pEPush(const zz_pEContext& context); 
+  // backup current modulus and install the given one
+
+private:
+zz_pEPush(const zz_pEPush&); // disabled
+void operator=(const zz_pEPush&); // disabled
+
+};
+
+
+
+// more general context switching:
+// A zz_pEContext object has a modulus Q (possibly "null"),
+
+class zz_pEContext {
+
+
+public:
+
+zz_pEContext(); // Q = "null"
+explicit zz_pEContext(const zz_pX& P); // Q = P
+
+void save(); // Q = CurrentModulus
+void restore() const; // CurrentModulus = Q
+
+zz_pEContext(const zz_pEContext&);  // copy
+zz_pEContext& operator=(const zz_pEContext&); // assignment
+~zz_pEContext(); // destructor
+
+
+};
+
+
+// An older interface:
+// To describe this logic, think of a zz_pEBak object
+// of having two components: a modulus Q (possibly "null") and 
+// an "auto-restore bit" b.
 
 
 class zz_pEBak {
 public:
 
-   // To describe this logic, think of a zz_pEBak object
-   // of having two components: a modulus Q (possibly "null") and 
-   // an "auto-restore bit" b.
-
-   // There is also a global current modulus P (initially "null").
 
    zz_pEBak();  // Q = "null", b = 0
 
-   ~zz_pEBak();  // if (b) P = Q
+   ~zz_pEBak();  // if (b) CurrentModulus = Q
 
-   void save();  // Q = P, b = 1 
-   void restore();  // P = Q, b = 0
+   void save();  // Q = CurrentModulus, b = 1 
+   void restore();  // CurrentModulus = Q, b = 0
 
 
 private:
@@ -285,31 +352,8 @@ private:
 };
 
 
-// more general context switching:
-
-class zz_pEContext {
-
-// A zz_pEContext object has a modulus Q (possibly "null"),
-// but has no auto-restore bit like a zz_pEBak object.
-// However, these objects can be initialized and copied with
-// complete generality.
-
-// As above, P is the current global modulus (initially "null")
-
-public:
-
-zz_pEContext(); // Q = "null"
-zz_pEContext(const zz_pX& new_Q); // Q = new_Q
-
-void save(); // Q = P
-void restore() const; // P = Q
-
-zz_pEContext(const zz_pEContext&);  // copy
-zz_pEContext& operator=(const zz_pEContext&); // assignment
-~zz_pEContext(); // destructor
 
 
-};
 
 
 /**************************************************************************\
@@ -324,9 +368,23 @@ void set(zz_pE& x); // x = 1
 static const zz_pE& zz_pE::zero();
 // zz_pE::zero() yields a read-only reference to zero
 
+void zz_pE::swap(zz_pE& x);
 void swap(zz_pE& x, zz_pE& y);
-// swap x and y (done by "pointer swapping", if possible).
+// swap (done by "pointer swapping", if possible).
 
 static ZZ& zz_pE::cardinality();
 // yields the cardinality, i.e., p^{zz_pE::degree()}
+
+zz_pE::zz_pE(INIT_NO_ALLOC_TYPE);
+// special constructor: invoke as zz_pE x(INIT_NO_ALLOC);
+// initializes x to 0, but allocates no space (this is now the default)
+
+zz_pE::zz_pE(INIT_ALLOC_TYPE);
+// special constructor: invoke as zz_pE x(INIT_ALLOC);
+// initializes x to 0, but allocates space
+
+zz_pE::allocate();
+// useful in conjunction with the INIT_NO_ALLLOC constructor:
+// x.allocate() will pre-allocate space for x, using the
+// current modulus
 
