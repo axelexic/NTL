@@ -309,7 +309,7 @@ SFILES=$(SFI3)
 NTL_INCLUDE = -I../include -I.
 # NTL needs this to find its include files
 
-COMPILE = $(CXX) $(NTL_INCLUDE) $(CPPFLAGS) $(CXXFLAGS) -c
+COMPILE = $(CXX) -x c++ $(NTL_INCLUDE) $(CPPFLAGS) $(CXXFLAGS) -c
 
 LINK = $(CXX) $(NTL_INCLUDE) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS)
 

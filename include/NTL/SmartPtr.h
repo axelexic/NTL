@@ -292,7 +292,7 @@ void swap(SmartPtr<T>& p, SmartPtr<T>& q) { p.swap(q); }
 
 // free dynamic cast function
 template<class X, class Y>
-SmartPtr<X> DynamicCast(const SmartPtr<Y>& p) { return p.DynamicCast<X>(); }
+SmartPtr<X> DynamicCast(const SmartPtr<Y>& p) { return p. template DynamicCast<X>(); }
 
 
 
@@ -507,7 +507,7 @@ void swap(CloneablePtr<T>& p, CloneablePtr<T>& q) { p.swap(q); }
 
 // free dynamic cast function
 template<class X, class Y>
-CloneablePtr<X> DynamicCast(const CloneablePtr<Y>& p) { return p.DynamicCast<X>(); }
+CloneablePtr<X> DynamicCast(const CloneablePtr<Y>& p) { return p. template DynamicCast<X>(); }
 
 
 
